@@ -513,7 +513,7 @@ class Builder:
         self.items: dict[str, dict] = {}
 
     def add(self, raw: dict, via: str, *, specialist=False, domain=None, hint=None,
-            drop_if=None, min_magnitude=None, forced_domain=None):
+            drop_if=None, min_magnitude=None, forced_domain=None, force_place=None):
         title = raw["title"]
         orig = raw.get("orig")                 # original-language headline, if translated
         lang = raw.get("lang", "en")
@@ -558,6 +558,9 @@ class Builder:
                 kind, name = res
                 c, r, k = ([name], [], []) if kind == "country" else \
                           ([], [name], []) if kind == "region" else ([], [], [name])
+        if force_place and force_place not in c:
+            # result of a search for this specific country: always file it there
+            c = c[:4] + [force_place]
         c, r, k = self.gaz.expand(c, r, k)
 
         item = {
@@ -687,6 +690,7 @@ def main():
     gaz = Gazetteer(places)
     tagger = Tagger(domcfg)
     domain_ids = {d["id"] for d in tagger.meta}
+    previous = load_previous(args.previous or previous_data_url(sources))
 
     # Every source becomes a job: (name, kind, url, fetch_fn, add_kwargs, via, lang)
     jobs = []
@@ -728,6 +732,45 @@ def main():
             search_jobs("google_news", "Google News", lambda q, e=ed: gnews_url(q, e, when),
                         qs, lang, "gnews")
 
+    # Country-by-country searches (rotating; countries without recent news first)
+    cs = sources.get("country_search") or {}
+    if cs.get("enabled", False):
+        all_countries = [c for regs in gaz.taxonomy.values() for cs_ in regs.values() for c in cs_]
+        cjobs = []
+        terms = cs.get("terms", "")
+        en_ed = {"hl": gn.get("language", "en-US"), "gl": gn.get("country", "US"), "ceid": gn.get("ceid")}
+        for c in all_countries:
+            q = (cs.get("names") or {}).get(c) or f'"{c}"'
+            cjobs.append((c, "en", f"{terms} ({q})" if terms else q, en_ed))
+        for lang, spec in (cs.get("local") or {}).items():
+            lterms = spec.get("terms", "")
+            for c, q in (spec.get("countries") or {}).items():
+                if c not in gaz.country_region:
+                    log(f"  ! country_search: unknown country '{c}' ({lang})")
+                    continue
+                cjobs.append((c, lang, f"{lterms} ({q})" if lterms else q, spec.get("edition", {})))
+        recent = set()
+        cutoff = iso(NOW - timedelta(hours=24))
+        for it in previous:
+            if it.get("p", "") >= cutoff:
+                recent.update(it.get("c") or [])
+        per_run = int(cs.get("per_run", 75))
+        missing = [j for j in cjobs if j[0] not in recent]
+        missing.sort(key=lambda j: j[1] != "en")       # English search first for each quiet country
+        rest = [j for j in cjobs if j[0] in recent]
+        if rest:
+            off = (int(NOW.timestamp()) // 1200 * per_run) % len(rest)
+            rest = rest[off:] + rest[:off]
+        chosen = (missing + rest)[:per_run]
+        log(f"Country searches: {len(chosen)} of {len(cjobs)} this run "
+            f"({len(set(j[0] for j in missing))} countries had no recent reports and go first)")
+        cwhen = cs.get("when", "2d")
+        for c, lang, query, ed in chosen:
+            url = gnews_url(query, ed, cwhen)
+            jobs.append((f"Country · {c}" + ("" if lang == "en" else f" ({lang})"), "country_search", url,
+                         lambda u=url: fetch_feed({"name": "Google News", "url": u}),
+                         {"specialist": True, "hint": c, "force_place": c}, "gnews", lang))
+
     bn = sources.get("bing_news") or {}
     if bn.get("enabled", False):
         search_jobs("bing_news", "Bing News", lambda q: bing_url(q, bn.get("market", "en-US")),
@@ -758,7 +801,6 @@ def main():
                          {"specialist": True, "domain": d, "forced_domain": d}, "gdelt", "en"))
 
     # 2 ── previous run (for merging, and so headlines are only translated once)
-    previous = load_previous(args.previous or previous_data_url(sources))
     known_tr = {it["ot"]: it["t"] for it in previous if it.get("ot")}
 
     # 3 ── translate non-English headlines
@@ -840,6 +882,10 @@ def main():
         old = merged.get(it["id"])
         merged[it["id"]] = merge_items(old, it) if old else it
     items = sorted(merged.values(), key=lambda i: i["p"], reverse=True)[:max_items]
+    covered = {c for it in items for c in it.get("c") or []}
+    absent = [c for c in gaz.country_region if c not in covered]
+    log(f"Countries with reports: {len(gaz.country_region) - len(absent)}/{len(gaz.country_region)}"
+        + (f" — none yet for: {', '.join(absent)}" if absent else ""))
 
     if not items:
         log("No items at all — every source failed. Leaving the current site untouched.")

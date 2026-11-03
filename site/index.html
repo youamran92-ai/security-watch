@@ -297,7 +297,7 @@ footer a{color:var(--muted)}
 
 <div class="wrap">
   <aside id="side">
-    <div class="side-h"><span>Places</span><button id="quietBtn">Show quiet</button></div>
+    <div class="side-h"><span>Places</span><button id="quietBtn">Hide quiet</button></div>
     <input class="geo-find" id="geoFind" placeholder="Find a country or region…" autocomplete="off">
     <div id="tree"></div>
   </aside>
@@ -342,7 +342,7 @@ footer a{color:var(--muted)}
 const S = {
   data: null, items: [], domains: [], domMap: {}, tax: {}, regCont: {}, ctyReg: {},
   view: 'brief', geo: null, doms: new Set(), win: 24, high: false, q: '',
-  limit: 150, showQuiet: false, open: new Set(), pending: null,
+  limit: 150, showQuiet: load('sw.quiet', true), open: new Set(), pending: null,
   watch: new Set(load('sw.watch', [])),
 };
 const $ = s => document.querySelector(s);
@@ -379,6 +379,7 @@ function readHash(){
   S.high = p.get('hi') === '1';
   S.q = p.get('q') || '';
   S.lang = p.get('lang') || '';
+  if (S.geo && S.tax) for (const x of geoPath(S.geo)) if (x.name) S.open.add(x.type + ':' + x.name);
   $('#q').value = S.q;
 }
 function writeHash(){
@@ -420,6 +421,7 @@ async function init(){
   readHash();
   try { ingest(await fetchData()); }
   catch (e) { renderNoData(e); return; }
+  if (S.geo) for (const x of geoPath(S.geo)) if (x.name) S.open.add(x.type + ':' + x.name);
   render();
   setInterval(updateStatus, 30000);
   setInterval(poll, 5 * 60000);
@@ -568,7 +570,7 @@ function renderTree(){
       const rk = 'region:' + reg;
       const regHit = contHit || reg.toLowerCase().includes(find);
       const shown = ctys.filter(c => (S.showQuiet || cnt['country:' + c] || find) && (regHit || c.toLowerCase().includes(find)))
-                        .sort((a, b) => (cnt['country:' + b] || 0) - (cnt['country:' + a] || 0) || a.localeCompare(b));
+                        .sort((a, b) => a.localeCompare(b));
       if (!regHit && !shown.length) continue;
       if (!S.showQuiet && !find && !cnt[rk]) continue;
       any = true;
@@ -592,7 +594,8 @@ $('#tree').onclick = e => {
   const n = e.target.closest('[data-g]'); if (n) setGeo(n.dataset.g);
 };
 $('#geoFind').oninput = renderTree;
-$('#quietBtn').onclick = () => { S.showQuiet = !S.showQuiet; $('#quietBtn').textContent = S.showQuiet ? 'Hide quiet' : 'Show quiet'; renderTree(); };
+$('#quietBtn').textContent = S.showQuiet ? 'Hide quiet' : 'Show quiet';
+$('#quietBtn').onclick = () => { S.showQuiet = !S.showQuiet; save('sw.quiet', S.showQuiet); $('#quietBtn').textContent = S.showQuiet ? 'Hide quiet' : 'Show quiet'; renderTree(); };
 
 // ── cards ────────────────────────────────────────────────────────────────
 function card(it){
@@ -637,7 +640,8 @@ $('#view').addEventListener('click', e => { if (e.target.id === 'showMore') { S.
 // ── views ────────────────────────────────────────────────────────────────
 function renderFeed(){
   const items = S.items.filter(i => passes(i));
-  $('#view').innerHTML = list(items, 'Try a longer time window, fewer topics, or clear the search.');
+  const quiet = S.geo && S.geo.type === 'country' ? `No reports for ${esc(S.geo.name)} in the last ${S.win}h with these filters. Every country is searched about every 1–2 hours; try the 48h window.` : 'Try a longer time window, fewer topics, or clear the search.';
+  $('#view').innerHTML = list(items, quiet);
 }
 function renderWatch(){
   if (!S.watch.size) {
@@ -864,7 +868,7 @@ function renderLinks(){
 
 function renderSources(){
   const src = [...(S.data.sources || [])].sort((a, b) => (a.ok - b.ok) || a.name.localeCompare(b.name));
-  const kinds = {feed: 'RSS feed', google_news: 'Google News', bing_news: 'Bing News', gdelt: 'GDELT', translator: 'Translator'};
+  const kinds = {feed: 'RSS feed', google_news: 'Google News', country_search: 'Country search', bing_news: 'Bing News', gdelt: 'GDELT', translator: 'Translator'};
   $('#view').innerHTML = `<div class="panel"><div class="panel-b" style="overflow-x:auto">
     <p class="mini" style="margin:4px 0 10px">Status from the last collection run (${esc(local(Date.parse(S.data.generated)))}, took ${S.data.run_seconds}s). A failing source is simply skipped. If one stays red for days, fix or remove it in <span class="mono">config/sources.yaml</span>.</p>
     <table class="src"><thead><tr><th>Source</th><th>Type</th><th style="text-align:right">Fetched</th><th style="text-align:right">Kept</th><th>Status</th></tr></thead><tbody>

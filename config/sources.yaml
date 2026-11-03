@@ -310,6 +310,212 @@ gdelt:
     threats:  '(cyberattack OR ransomware OR sanctions OR "ballistic missile" OR piracy OR warship)'
     hazards:  '(outbreak OR earthquake OR flooding OR cyclone OR refugees OR famine)'
 
+# ── 3a. COUNTRY-BY-COUNTRY SEARCHES ──────────────────────────────────────────
+#  One Google News search for EVERY country in places.yaml, so no country is
+#  left without news, plus a second search in the local language for countries
+#  where English coverage is thin. Searches rotate: each run takes the next
+#  `per_run` of them (countries with no recent reports always go first), so
+#  every country is refreshed roughly every 1–2 hours.
+country_search:
+  enabled: true
+  per_run: 75
+  when: 2d
+  # Broad on purpose, so that quiet countries still show something:
+  terms: '(security OR military OR army OR police OR attack OR killed OR protest OR election OR government OR minister OR president OR border OR crisis OR sanctions)'
+  # English search wording for names that are ambiguous or have several forms.
+  # Every other country is searched by its name in quotes.
+  names:
+    "Côte d'Ivoire":        '"Ivory Coast" OR "Côte d''Ivoire" OR Ivorian'
+    DR Congo:               '"DR Congo" OR DRC OR "Democratic Republic of Congo" OR Kinshasa'
+    Republic of the Congo:  '"Republic of Congo" OR "Congo-Brazzaville" OR Brazzaville'
+    Central African Republic: '"Central African Republic" OR Bangui'
+    Guinea:                 '"Guinea" -Bissau -"New Guinea" -Equatorial'
+    Niger:                  '"Niger" -Nigeria -"Niger Delta" -"Niger State"'
+    Chad:                   'Chadian OR "N''Djamena" OR "Chad government" OR "Chad army"'
+    Sudan:                  '"Sudan" -"South Sudan" OR Sudanese OR Khartoum'
+    Jordan:                 'Jordanian OR Amman OR "Kingdom of Jordan"'
+    Georgia:                'Tbilisi OR Georgian'
+    Dominica:               '"Dominica" -Dominican'
+    Samoa:                  '"Samoa" -American'
+    Palestine:              'Gaza OR "West Bank" OR Palestinian'
+    Türkiye:                'Türkiye OR Turkey OR Turkish'
+    United States:          '"United States" OR Pentagon OR "White House"'
+    United Kingdom:         'Britain OR British OR "United Kingdom"'
+    Micronesia:             '"Federated States of Micronesia" OR Micronesia'
+    Vatican:                'Vatican OR "Holy See"'
+    Falkland Islands:       'Falklands OR "Falkland Islands"'
+    Eswatini:               'Eswatini OR Swaziland'
+    Timor-Leste:            '"Timor-Leste" OR "East Timor"'
+    Cabo Verde:             '"Cabo Verde" OR "Cape Verde"'
+    Czechia:                'Czechia OR "Czech Republic"'
+    Myanmar:                'Myanmar OR Burma'
+  # Local-language searches. Headlines are translated to English automatically.
+  local:
+    fr:
+      edition: {hl: fr, gl: FR, ceid: "FR:fr"}
+      terms: '(sécurité OR armée OR militaires OR police OR attaque OR tués OR manifestation OR élection OR gouvernement OR ministre OR président OR crise)'
+      countries:
+        Algeria: Algérie
+        Morocco: Maroc
+        Tunisia: Tunisie
+        Mauritania: Mauritanie
+        Benin: Bénin
+        Burkina Faso: '"Burkina Faso"'
+        "Côte d'Ivoire": '"Côte d''Ivoire"'
+        Guinea: '"Guinée" -Bissau -équatoriale'
+        Mali: Mali
+        Niger: '"Niger" -Nigeria'
+        Senegal: Sénégal
+        Togo: Togo
+        Cameroon: Cameroun
+        Central African Republic: Centrafrique
+        Chad: Tchad
+        Republic of the Congo: '"Congo-Brazzaville" OR Brazzaville'
+        DR Congo: 'RDC OR "RD Congo" OR Kinshasa'
+        Gabon: Gabon
+        Burundi: Burundi
+        Rwanda: Rwanda
+        Djibouti: Djibouti
+        Comoros: Comores
+        Madagascar: Madagascar
+        Haiti: Haïti
+        Lebanon: Liban
+        Belgium: Belgique
+        France: France
+        Switzerland: Suisse
+        Luxembourg: Luxembourg
+        Monaco: Monaco
+        New Caledonia: '"Nouvelle-Calédonie"'
+        Vanuatu: Vanuatu
+        Seychelles: Seychelles
+    es:
+      edition: {hl: es-419, gl: MX, ceid: "MX:es-419"}
+      terms: '(seguridad OR militares OR ejército OR policía OR ataque OR muertos OR protestas OR elecciones OR gobierno OR ministro OR presidente OR crisis)'
+      countries:
+        Mexico: México
+        Guatemala: Guatemala
+        Honduras: Honduras
+        El Salvador: '"El Salvador"'
+        Nicaragua: Nicaragua
+        Costa Rica: '"Costa Rica"'
+        Panama: Panamá
+        Cuba: Cuba
+        Dominican Republic: '"República Dominicana"'
+        Puerto Rico: '"Puerto Rico"'
+        Colombia: Colombia
+        Venezuela: Venezuela
+        Ecuador: Ecuador
+        Peru: Perú
+        Bolivia: Bolivia
+        Chile: Chile
+        Argentina: Argentina
+        Paraguay: Paraguay
+        Uruguay: Uruguay
+        Spain: España
+        Equatorial Guinea: '"Guinea Ecuatorial"'
+    pt:
+      edition: {hl: pt-BR, gl: BR, ceid: "BR:pt-419"}
+      terms: '(segurança OR militares OR exército OR polícia OR ataque OR mortos OR protestos OR eleições OR governo OR ministro OR presidente OR crise)'
+      countries:
+        Brazil: Brasil
+        Portugal: Portugal
+        Angola: Angola
+        Mozambique: Moçambique
+        Guinea-Bissau: '"Guiné-Bissau"'
+        Cabo Verde: '"Cabo Verde"'
+        Sao Tome and Principe: '"São Tomé"'
+        Timor-Leste: '"Timor-Leste"'
+    ar:
+      edition: {hl: ar, gl: EG, ceid: "EG:ar"}
+      terms: '(الأمن OR الجيش OR الشرطة OR هجوم OR قتلى OR احتجاجات OR انتخابات OR الحكومة OR وزير OR الرئيس OR أزمة)'
+      countries:
+        Egypt: مصر
+        Libya: ليبيا
+        Sudan: '"السودان" -"جنوب السودان"'
+        South Sudan: '"جنوب السودان"'
+        Iraq: العراق
+        Syria: سوريا
+        Jordan: الأردن
+        Lebanon: لبنان
+        Palestine: 'فلسطين OR غزة OR "الضفة الغربية"'
+        Saudi Arabia: السعودية
+        United Arab Emirates: الإمارات
+        Qatar: قطر
+        Bahrain: البحرين
+        Kuwait: الكويت
+        Oman: عمان
+        Yemen: اليمن
+        Somalia: الصومال
+        Mauritania: موريتانيا
+        Algeria: الجزائر
+        Tunisia: تونس
+        Morocco: المغرب
+        Western Sahara: '"الصحراء الغربية"'
+    ru:
+      edition: {hl: ru, gl: RU, ceid: "RU:ru"}
+      terms: '(безопасность OR армия OR военные OR полиция OR атака OR погибли OR протесты OR выборы OR правительство OR министр OR президент)'
+      countries:
+        Russia: Россия
+        Belarus: Беларусь
+        Kazakhstan: Казахстан
+        Kyrgyzstan: Киргизия
+        Tajikistan: Таджикистан
+        Turkmenistan: Туркмения
+        Uzbekistan: Узбекистан
+        Armenia: Армения
+        Azerbaijan: Азербайджан
+        Georgia: Грузия
+        Moldova: Молдавия
+        Mongolia: Монголия
+    uk:
+      edition: {hl: uk, gl: UA, ceid: "UA:uk"}
+      terms: '(безпека OR армія OR військові OR поліція OR атака OR загиблі OR обстріл OR уряд OR міністр OR президент)'
+      countries:
+        Ukraine: Україна
+    de:
+      edition: {hl: de, gl: DE, ceid: "DE:de"}
+      terms: '(Sicherheit OR Militär OR Armee OR Polizei OR Angriff OR Tote OR Protest OR Wahl OR Regierung OR Minister OR Präsident)'
+      countries:
+        Germany: Deutschland
+        Austria: Österreich
+        Liechtenstein: Liechtenstein
+    tr:
+      edition: {hl: tr, gl: TR, ceid: "TR:tr"}
+      terms: '(güvenlik OR ordu OR asker OR polis OR saldırı OR öldü OR protesto OR seçim OR hükümet OR bakan OR cumhurbaşkanı)'
+      countries:
+        Türkiye: Türkiye
+        Cyprus: '"Kıbrıs"'
+    zh-TW:
+      edition: {hl: zh-TW, gl: TW, ceid: "TW:zh-Hant"}
+      terms: '(安全 OR 軍事 OR 軍隊 OR 警方 OR 攻擊 OR 抗議 OR 選舉 OR 政府 OR 部長 OR 總統)'
+      countries:
+        Taiwan: 台灣
+        China: 中國
+    ja:
+      edition: {hl: ja, gl: JP, ceid: "JP:ja"}
+      terms: '(安全保障 OR 自衛隊 OR 軍 OR 警察 OR 攻撃 OR 抗議 OR 選挙 OR 政府 OR 首相 OR 大臣)'
+      countries:
+        Japan: 日本
+    ko:
+      edition: {hl: ko, gl: KR, ceid: "KR:ko"}
+      terms: '(안보 OR 군사 OR 군 OR 경찰 OR 공격 OR 시위 OR 선거 OR 정부 OR 장관 OR 대통령)'
+      countries:
+        South Korea: 한국
+        North Korea: 북한
+    id:
+      edition: {hl: id, gl: ID, ceid: "ID:id"}
+      terms: '(keamanan OR militer OR TNI OR polisi OR serangan OR tewas OR demo OR pemilu OR pemerintah OR menteri OR presiden)'
+      countries:
+        Indonesia: Indonesia
+        Malaysia: Malaysia
+        Brunei: Brunei
+    hi:
+      edition: {hl: hi, gl: IN, ceid: "IN:hi"}
+      terms: '(सुरक्षा OR सेना OR पुलिस OR हमला OR मौत OR प्रदर्शन OR चुनाव OR सरकार OR मंत्री)'
+      countries:
+        India: भारत
+        Nepal: नेपाल
+
 # ── 3b. BING NEWS ────────────────────────────────────────────────────────────
 #  A second search engine: runs the same English searches as Google News above,
 #  so stories Google misses still come through. Duplicates are merged.
