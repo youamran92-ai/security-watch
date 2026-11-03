@@ -37,6 +37,7 @@ class Translator:
         self._index = None
         self._models: dict[str, tuple | None] = {}
         self.status: dict[str, dict] = {}      # lang → {"ok", "count", "error"}
+        self.downloaded = False                 # True if any model was fetched this run
 
     # ── model management ───────────────────────────────────────────────────
     def index(self):
@@ -68,7 +69,10 @@ class Translator:
                 raise RuntimeError("no free model for this language" if self.index()
                                    else "couldn't reach the model list")
             last = None
-            for link in pkg.get("links", []):
+            links = list(pkg.get("links", [])) * 3          # up to 3 tries per mirror
+            for attempt, link in enumerate(links):
+                if attempt:
+                    time.sleep(3)
                 try:
                     r = self.session.get(link, timeout=(10, 240))
                     r.raise_for_status()
@@ -78,6 +82,7 @@ class Translator:
                         z.extractall(folder)
                     (folder / ".ready").write_text(str(pkg.get("package_version", "")))
                     self.log(f"  downloaded {code}→en model ({len(r.content) // 1_000_000} MB)")
+                    self.downloaded = True
                     last = None
                     break
                 except Exception as ex:
@@ -86,14 +91,26 @@ class Translator:
                 raise RuntimeError(f"model download failed ({type(last).__name__})")
 
         model_bin = next(folder.rglob("model.bin"), None)
-        sp_file = next(folder.rglob("sentencepiece.model"), None) or \
-                  next((p for p in folder.rglob("*.model") if "stanza" not in str(p)), None)
-        if not model_bin or not sp_file:
+        if not model_bin:
             raise RuntimeError("model files not found in package")
+        sp = None
+        cands = sorted((p for p in folder.rglob("*")
+                        if p.is_file() and p.suffix in (".model", ".spm") and "stanza" not in p.parts),
+                       key=lambda p: (p.name != "sentencepiece.model", len(str(p))))
+        for cand in cands:
+            try:
+                proc = spm.SentencePieceProcessor(model_file=str(cand))
+                if proc.get_piece_size() > 100:
+                    sp = proc
+                    break
+            except Exception:
+                continue
+        if sp is None:
+            names = ", ".join(sorted(p.name for p in folder.rglob("*") if p.is_file()))[:300]
+            raise RuntimeError(f"no usable tokenizer in package ({names})")
         threads = max(1, (os.cpu_count() or 2))
         tr = ctranslate2.Translator(str(model_bin.parent), device="cpu",
                                     inter_threads=1, intra_threads=threads)
-        sp = spm.SentencePieceProcessor(model_file=str(sp_file))
         self._models[code] = (tr, sp)
         return self._models[code]
 

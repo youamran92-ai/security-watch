@@ -35,15 +35,26 @@ jobs:
         run: pip install -r requirements.txt
 
       # Translation models are downloaded once, then reused from this cache.
-      - name: Translation models cache
-        uses: actions/cache@v4
+      - name: Restore translation models
+        uses: actions/cache/restore@v4
         with:
           path: ~/.cache/securitywatch-models
-          key: translation-models-v1-${{ hashFiles('config/sources.yaml') }}
-          restore-keys: translation-models-v1-
+          key: translation-models-v2-${{ github.run_id }}
+          restore-keys: |
+            translation-models-v2-
+            translation-models-v1-
 
       - name: Collect and tag the news
+        id: collect
         run: python scripts/fetch.py --out _site
+
+      # Only saves when a new language model was downloaded this run.
+      - name: Save translation models
+        if: steps.collect.outputs.models_changed == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/securitywatch-models
+          key: translation-models-v2-${{ github.run_id }}
 
       # GitHub pauses scheduled jobs after 60 days without repository activity.
       # This writes the month into a small file once a month so that never happens.

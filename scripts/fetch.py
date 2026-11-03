@@ -795,6 +795,9 @@ def main():
                     t = r.get("title_src")
                     if t and not r.get("orig") and t in done:
                         r["orig"], r["title"] = t, done[t]
+            if tr.downloaded and os.environ.get("GITHUB_OUTPUT"):
+                with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+                    fh.write("models_changed=true\n")
             for lang, st in sorted(tr.status.items()):
                 status.append({"name": f"Translator · {lang} → en", "kind": "translator", "url": "",
                                "ok": st["ok"], "count": len(pending.get(lang, [])), "kept": st["count"],
