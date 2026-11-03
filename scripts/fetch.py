@@ -325,7 +325,7 @@ def short_err(ex) -> str:
 def gnews_url(query: str, gn: dict) -> str:
     lang = gn.get("language", "en-US")
     country = gn.get("country", "US")
-    q = f"{query} when:{gn.get('when', '1d')}"
+    q = f"when:{gn.get('when', '1d')} {query}"
     return (f"https://news.google.com/rss/search?q={quote_plus(q)}"
             f"&hl={lang}&gl={country}&ceid={country}:{lang.split('-')[0]}")
 
@@ -349,7 +349,7 @@ def fetch_gdelt(domain: str, query: str, gd: dict):
     last = None
     for attempt in range(2):
         try:
-            r = session.get(url, timeout=(8, 25))
+            r = session.get(url, timeout=(10, 50))
             if r.status_code == 429:
                 last = "rate limited (HTTP 429)"
                 time.sleep(6)
@@ -581,7 +581,9 @@ def main():
         status.append(st)
         flag = "ok " if st["ok"] else "ERR"
         log(f"  [{flag}] {name}: {st['count']} fetched, {st['kept']} kept"
-            + (f" — {st.get('error')}" if not st["ok"] else ""))
+            + (f" — {st.get('error')}" if not st["ok"] else "")
+            + (f"  (dropped: {', '.join(f'{k} {v}' for k, v in outcome.items() if k != 'kept')})"
+               if st["ok"] and st["kept"] < st["count"] else ""))
 
     # 1 ── RSS feeds (in parallel)
     feeds = [] if args.skip_feeds else (sources.get("feeds") or [])
@@ -639,7 +641,9 @@ def main():
                 time.sleep(5.5)
             raw, st = fetch_gdelt(dom, query, gd)
             record(f"GDELT · {dom}", "gdelt", "https://api.gdeltproject.org/api/v2/doc/doc",
-                   st, raw, {"specialist": True, "domain": dom, "forced_domain": dom}, "gdelt")
+                   st, raw, {"specialist": True,
+                             "domain": dom if dom in domain_ids else None,
+                             "forced_domain": dom if dom in domain_ids else None}, "gdelt")
 
     fresh = len(builder.items)
     log(f"This run: {fresh} distinct stories")

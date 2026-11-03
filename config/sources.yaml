@@ -47,18 +47,15 @@ feeds:
   - {name: Premium Times (NG),   url: "https://www.premiumtimesng.com/feed",                       hint: Nigeria}
   - {name: Daily Maverick (ZA),  url: "https://www.dailymaverick.co.za/dmrss/",                    hint: South Africa}
   - {name: Middle East Eye,      url: "https://www.middleeasteye.net/rss",                         hint: Middle East}
-  - {name: Times of Israel,      url: "https://www.timesofisrael.com/feed/",                       hint: Israel}
   - {name: The Diplomat,         url: "https://thediplomat.com/feed/",                             hint: Asia}
   - {name: Asia Times,           url: "https://asiatimes.com/feed/",                               hint: Asia}
   - {name: SCMP China,           url: "https://www.scmp.com/rss/4/feed",                           hint: China}
-  - {name: Kyiv Independent,     url: "https://kyivindependent.com/rss/",                          hint: Ukraine}
   - {name: Meduza (English),     url: "https://meduza.io/rss/en/all",                              hint: Russia}
   - {name: Balkan Insight,       url: "https://balkaninsight.com/feed/",                           hint: Central Europe & Balkans}
   - {name: Euractiv,             url: "https://www.euractiv.com/feed/",                            hint: Europe}
   - {name: MercoPress,           url: "https://en.mercopress.com/rss",                             hint: South America}
   - {name: RNZ Pacific,          url: "https://www.rnz.co.nz/rss/pacific.xml",                     hint: Pacific Islands}
   - {name: Guardian Australia,   url: "https://www.theguardian.com/australia-news/rss",            hint: Australia}
-  - {name: ArcticToday,          url: "https://www.arctictoday.com/feed/",                         hint: Arctic}
 
   # Specialist security outlets (every item kept)
   - {name: Crisis Group,         url: "https://www.crisisgroup.org/rss.xml",          specialist: true, domain: political}
@@ -103,7 +100,7 @@ google_news:
   language: en-US        # change to fr-FR, es-419, pt-BR, ar … for other editions
   country: US
   # Security words added to every regional search below:
-  security_terms: '(attack OR military OR troops OR militants OR coup OR protest OR clashes OR sanctions OR terrorism OR insurgents OR "security forces" OR killed OR navy OR cyberattack)'
+  security_terms: '(attack OR military OR troops OR militants OR coup OR protest OR clashes OR killed OR sanctions)'
   regional:
     - {hint: North Africa,               places: 'Egypt OR Libya OR Tunisia OR Algeria OR Morocco OR "Western Sahara"'}
     - {hint: West Africa,                places: 'Mali OR "Burkina Faso" OR Niger OR Nigeria OR Ghana OR Senegal OR "Ivory Coast" OR Guinea OR Benin OR Togo OR Sahel OR Mauritania'}
@@ -146,22 +143,16 @@ google_news:
 gdelt:
   enabled: true
   timespan: 3h           # look-back per run
-  max_per_query: 75
+  max_per_query: 250
   languages: [english]   # add e.g. french, spanish, portuguese, arabic
+  # A few broad searches rather than one per domain: GDELT is often slow, and
+  # fewer, bigger requests get through more reliably. Headlines are sorted into
+  # domains by keyword afterwards. A key that matches a domain id (e.g.
+  # "conflict") also tags every result with that domain.
   queries:
-    conflict:  '(airstrike OR shelling OR "armed clashes" OR "military offensive" OR insurgents OR "drone strike")'
-    terrorism: '(terrorist OR jihadist OR "suicide bomber" OR "militant attack" OR "Islamic State")'
-    political: '(coup OR "state of emergency" OR "martial law" OR "anti-government protest" OR junta)'
-    cyber:     '(cyberattack OR ransomware OR "data breach" OR hackers OR disinformation)'
-    diplomacy: '(sanctions OR "security council" OR "peace talks" OR "expelled diplomats")'
-    economic:  '("energy security" OR "export controls" OR "critical minerals" OR "oil supply" OR "food security")'
-    maritime:  '(piracy OR warship OR "coast guard" OR "naval drills" OR "tanker seized")'
-    wmd:       '("nuclear weapons" OR "ballistic missile" OR "chemical weapons" OR "uranium enrichment")'
-    crime:     '(cartel OR "drug trafficking" OR "human trafficking" OR smuggling)'
-    health:    '(outbreak OR epidemic OR cholera OR ebola OR famine)'
-    disaster:  '(earthquake OR flooding OR cyclone OR typhoon OR wildfire OR landslide)'
-    migration: '(migrants OR refugees OR "border crossing" OR displaced)'
-    space:     '("anti-satellite" OR "GPS jamming" OR "spy satellite" OR "space force" OR "satellite launch")'
+    security: '(airstrike OR shelling OR coup OR terrorist OR militants OR "armed clashes" OR insurgents)'
+    threats:  '(cyberattack OR ransomware OR sanctions OR "ballistic missile" OR piracy OR warship)'
+    hazards:  '(outbreak OR earthquake OR flooding OR cyclone OR refugees OR famine)'
 
 # ── 4. REFERENCE DESK ────────────────────────────────────────────────────────
 #  The "Links" tab: live maps, trackers and institutions — your start page.
