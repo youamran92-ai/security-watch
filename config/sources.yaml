@@ -141,7 +141,9 @@ google_news:
 #  GDELT watches news worldwide and refreshes every 15 minutes.
 #  One search per domain; GDELT allows one request every 5 seconds.
 gdelt:
-  enabled: true
+  # Turned off: GDELT's servers time out or refuse requests coming from
+  # GitHub's machines. Google News covers the same ground. Set to true to retry.
+  enabled: false
   timespan: 3h           # look-back per run
   max_per_query: 250
   languages: [english]   # add e.g. french, spanish, portuguese, arabic
