@@ -105,13 +105,32 @@ class Translator:
                     break
             except Exception:
                 continue
-        if sp is None:
-            names = ", ".join(sorted(p.name for p in folder.rglob("*") if p.is_file()))[:300]
-            raise RuntimeError(f"no usable tokenizer in package ({names})")
+        if sp is not None:
+            encode = lambda t: sp.encode(t, out_type=str)
+            decode = lambda toks: sp.decode_pieces(toks).replace("\u2581", " ")
+        else:
+            bpe_file = next(folder.rglob("bpe.model"), None)
+            if not bpe_file:
+                names = ", ".join(sorted(p.name for p in folder.rglob("*") if p.is_file()))[:300]
+                raise RuntimeError(f"no usable tokenizer in package ({names})")
+            # Older-style packages: Moses tokenisation + BPE (same as Argos itself does)
+            from sacremoses.normalize import MosesPunctNormalizer
+            from sacremoses.tokenize import MosesDetokenizer, MosesTokenizer
+            from apply_bpe import BPE
+            mtok, mdetok, mnorm = MosesTokenizer(code), MosesDetokenizer("en"), MosesPunctNormalizer(code)
+            with open(bpe_file, encoding="utf-8") as fh:
+                bpe = BPE(fh)
+
+            def encode(t):
+                toks = " ".join(mtok.tokenize(mnorm.normalize(t)))
+                return bpe.segment_tokens(toks.strip().split(" "))
+
+            def decode(toks):
+                return mdetok.detokenize(" ".join(toks).replace("@@ ", "").split(" "))
         threads = max(1, (os.cpu_count() or 2))
         tr = ctranslate2.Translator(str(model_bin.parent), device="cpu",
                                     inter_threads=1, intra_threads=threads)
-        self._models[code] = (tr, sp)
+        self._models[code] = (tr, encode, decode)
         return self._models[code]
 
     # ── translation ────────────────────────────────────────────────────────
@@ -133,7 +152,7 @@ class Translator:
         if model is None:
             st.update(ok=False, error=st.get("error") or "model unavailable")
             return out
-        tr, sp = model
+        tr, encode, decode = model
         batch = 48
         for i in range(0, len(texts), batch):
             if time.time() > deadline:
@@ -141,11 +160,11 @@ class Translator:
                 break
             chunk = texts[i:i + batch]
             try:
-                toks = [sp.encode(t[:400], out_type=str) for t in chunk]
+                toks = [encode(t[:400]) for t in chunk]
                 res = tr.translate_batch(toks, beam_size=2, max_decoding_length=160,
                                          max_batch_size=batch)
                 for src, r in zip(chunk, res):
-                    en = sp.decode(r.hypotheses[0]).replace("▁", " ").strip()
+                    en = decode(r.hypotheses[0]).strip()
                     if en:
                         out[src] = en
             except Exception as ex:
