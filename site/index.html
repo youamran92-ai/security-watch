@@ -138,6 +138,13 @@ main{min-width:0;padding:16px 20px 60px}
 .meta{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .meta .src{font-weight:500;color:var(--text)}
 .meta time{font-family:var(--mono)}
+.lang{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:5px;font:600 10.5px var(--mono);letter-spacing:.04em;background:var(--accent-soft);color:var(--accent);text-transform:uppercase}
+button.lang:hover{background:var(--accent);color:var(--panel)}
+.lang.raw{background:var(--panel-2);color:var(--muted)}
+.ot{display:none;margin:4px 0 0;font-size:13px;color:var(--muted)}
+.ot.open{display:block}
+.ot b{font:600 10.5px var(--mono);color:var(--faint);margin-right:6px}
+.sel{padding:6px 28px 6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);font-size:13px;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 14px) 52%,calc(100% - 9px) 52%;background-size:5px 5px;background-repeat:no-repeat}
 .meta .via{font:10.5px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
 .tag{display:inline-flex;align-items:center;gap:5px;padding:1px 7px;border-radius:5px;background:var(--panel-2);font-size:11.5px;color:var(--muted);border:1px solid transparent}
 .tag:hover{border-color:var(--line-2);color:var(--text)}
@@ -311,6 +318,7 @@ footer a{color:var(--muted)}
         <button data-h="1">1h</button><button data-h="6">6h</button><button data-h="24">24h</button><button data-h="48">48h</button>
       </div>
       <button class="toggle" id="highBtn">● High priority only</button>
+      <select class="sel" id="langSel" title="Language of the original report"></select>
       <label class="search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input id="q" type="search" placeholder="Search headlines, sources…" autocomplete="off">
@@ -370,6 +378,7 @@ function readHash(){
   S.win = +(p.get('h') || 24) || 24;
   S.high = p.get('hi') === '1';
   S.q = p.get('q') || '';
+  S.lang = p.get('lang') || '';
   $('#q').value = S.q;
 }
 function writeHash(){
@@ -380,6 +389,7 @@ function writeHash(){
   if (S.win !== 24) p.set('h', S.win);
   if (S.high) p.set('hi', '1');
   if (S.q) p.set('q', S.q);
+  if (S.lang) p.set('lang', S.lang);
   const h = p.toString();
   history.replaceState(null, '', h ? '#' + h : location.pathname + location.search);
 }
@@ -400,7 +410,7 @@ function ingest(d){
     for (const [r, cs] of Object.entries(regs)) { S.regCont[r] = k; for (const c of cs) S.ctyReg[c] = r; }
   S.items = (d.items || []).map(it => {
     it.ts = Date.parse(it.p);
-    it.lc = (it.t + ' ' + it.s + ' ' + (it.x || '') + ' ' + (it.c || []).join(' ')).toLowerCase();
+    it.lc = (it.t + ' ' + (it.ot || '') + ' ' + it.s + ' ' + (it.x || '') + ' ' + (it.c || []).join(' ')).toLowerCase();
     return it;
   });
   document.title = d.title || 'Security Watch';
@@ -443,6 +453,9 @@ function geoMatch(it, g){
 function passes(it, {geo = true, dom = true} = {}){
   if (!inWin(it)) return false;
   if (S.high && it.sev < 2) return false;
+  if (S.lang === 'en' && it.l) return false;
+  if (S.lang === 'xx' && !it.l) return false;
+  if (S.lang && S.lang !== 'en' && S.lang !== 'xx' && it.l !== S.lang) return false;
   if (dom && S.doms.size && !it.d.some(d => S.doms.has(d))) return false;
   if (S.q && !S.q.toLowerCase().split(/\s+/).every(w => it.lc.includes(w))) return false;
   if (geo && !geoMatch(it, S.geo)) return false;
@@ -466,7 +479,7 @@ function render(){
   $('#toolbar').style.display = filterViews.includes(S.view) ? '' : 'none';
   $('#chips').style.display = ['feed', 'watch', 'map'].includes(S.view) ? '' : 'none';
   $('#crumbs').style.display = S.view === 'feed' ? '' : 'none';
-  updateStatus(); renderTree(); renderChips(); renderCrumbs(); renderCounts();
+  updateStatus(); renderLangSel(); renderTree(); renderChips(); renderCrumbs(); renderCounts();
   ({brief: renderBrief, map: renderMap, feed: renderFeed, watch: renderWatch, links: renderLinks, sources: renderSources}[S.view] || renderBrief)();
   renderFoot();
 }
@@ -594,13 +607,18 @@ function card(it){
       ${it.n > 1 ? `<button class="more-src" data-more="${esc(it.id)}">+${it.n - 1} outlet${it.n > 2 ? 's' : ''}</button>` : ''}
       ${geo.map(([t, n]) => `<button class="tag geo" data-g="${esc(t + ':' + n)}">${esc(n)}</button>`).join('')}
       ${doms.map(d => `<button class="tag" data-dom="${esc(d.id)}"><i style="background:${d.color}"></i>${esc(d.label)}</button>`).join('')}
-      <span class="via">${it.v === 'gnews' ? 'via Google News' : it.v === 'gdelt' ? 'via GDELT' : ''}</span>
+      ${it.l ? (it.ot ? `<button class="lang" data-ot="${esc(it.id)}" title="Translated from ${esc(LANG_NAMES[it.l] || it.l)} — click to see the original">${esc(it.l.split('-')[0])} → en</button>`
+                      : `<span class="lang raw" title="${esc(LANG_NAMES[it.l] || it.l)} — not translated yet">${esc(it.l.split('-')[0])}</span>`) : ''}
+      <span class="via">${{gnews: 'via Google News', bing: 'via Bing News', gdelt: 'via GDELT', gdeltfile: 'via GDELT events'}[it.v] || ''}</span>
     </div>
+    ${it.ot ? `<p class="ot" id="ot-${esc(it.id)}" dir="auto"><b>ORIGINAL</b>${esc(it.ot)}</p>` : ''}
     ${it.x ? `<p class="sum">${esc(it.x)}</p>` : ''}
     ${others.length ? `<div class="others" id="o-${esc(it.id)}">${others.map(o => `<a href="${esc(o.u)}" target="_blank" rel="noopener noreferrer">${esc(o.s)} ↗</a>`).join('')}${it.n - 1 > others.length ? `<span class="mini">+${it.n - 1 - others.length} more</span>` : ''}</div>` : ''}
   </article>`;
 }
 document.addEventListener('click', e => {
+  const ot = e.target.closest('[data-ot]');
+  if (ot) { const el = document.getElementById('ot-' + ot.dataset.ot); if (el) el.classList.toggle('open'); return; }
   const m = e.target.closest('[data-more]');
   if (m) { const el = document.getElementById('o-' + m.dataset.more); if (el) el.classList.toggle('open'); return; }
   const g = e.target.closest('.card [data-g], .hot [data-g], .matrix [data-g]');
@@ -846,7 +864,7 @@ function renderLinks(){
 
 function renderSources(){
   const src = [...(S.data.sources || [])].sort((a, b) => (a.ok - b.ok) || a.name.localeCompare(b.name));
-  const kinds = {feed: 'RSS feed', google_news: 'Google News', gdelt: 'GDELT'};
+  const kinds = {feed: 'RSS feed', google_news: 'Google News', bing_news: 'Bing News', gdelt: 'GDELT', translator: 'Translator'};
   $('#view').innerHTML = `<div class="panel"><div class="panel-b" style="overflow-x:auto">
     <p class="mini" style="margin:4px 0 10px">Status from the last collection run (${esc(local(Date.parse(S.data.generated)))}, took ${S.data.run_seconds}s). A failing source is simply skipped. If one stays red for days, fix or remove it in <span class="mono">config/sources.yaml</span>.</p>
     <table class="src"><thead><tr><th>Source</th><th>Type</th><th style="text-align:right">Fetched</th><th style="text-align:right">Kept</th><th>Status</th></tr></thead><tbody>
@@ -857,7 +875,8 @@ function renderSources(){
 }
 
 function renderFoot(){
-  $('#foot').innerHTML = `Collected automatically every ~20 minutes from ${S.data.sources?.length || 0} sources, RSS feeds, Google News and <a href="https://www.gdeltproject.org" target="_blank" rel="noopener">GDELT</a>. Headlines link to the original publishers. Automatic tagging can be wrong: always check the source.`;
+  const nsrc = (S.data.sources || []).filter(s => s.kind !== 'translator').length;
+  $('#foot').innerHTML = `Collected automatically every ~20 minutes from ${nsrc} sources: news feeds in 17 languages, Google News, Bing News and <a href="https://www.gdeltproject.org" target="_blank" rel="noopener">GDELT</a>. Non-English headlines are machine-translated with free, open-source <a href="https://www.argosopentech.com" target="_blank" rel="noopener">Argos Translate</a> models (click "fr → en" etc. to see the original). Headlines link to the original publishers. Automatic tagging and translation can be wrong: always check the source.`;
 }
 
 function renderNoData(e){
@@ -871,6 +890,18 @@ function renderNoData(e){
 $('#tabs').onclick = e => { const t = e.target.closest('.tab'); if (!t) return; S.view = t.dataset.v; S.limit = 150; render(); };
 $('#win').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.win = +b.dataset.h; S.limit = 150; render(); };
 $('#highBtn').onclick = () => { S.high = !S.high; S.limit = 150; render(); };
+$('#langSel').onchange = e => { S.lang = e.target.value; S.limit = 150; render(); };
+const LANG_NAMES = {fr:'French',es:'Spanish',pt:'Portuguese',ar:'Arabic',ru:'Russian',uk:'Ukrainian',zh:'Chinese','zh-TW':'Chinese (Taiwan)',
+  fa:'Persian',tr:'Turkish',hi:'Hindi',ur:'Urdu',id:'Indonesian',sw:'Swahili',de:'German',ja:'Japanese',ko:'Korean'};
+function renderLangSel(){
+  const cnt = {}; let en = 0;
+  for (const it of S.items) if (inWin(it)) { if (it.l) cnt[it.l] = (cnt[it.l] || 0) + 1; else en++; }
+  const other = Object.values(cnt).reduce((a, b) => a + b, 0);
+  const opts = [['', 'All languages'], ['en', `English sources (${fmtN(en)})`], ['xx', `Other languages (${fmtN(other)})`],
+    ...Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([l, n]) => [l, `${LANG_NAMES[l] || l.toUpperCase()} (${fmtN(n)})`])];
+  if (S.lang && !opts.some(o => o[0] === S.lang)) opts.push([S.lang, LANG_NAMES[S.lang] || S.lang]);
+  $('#langSel').innerHTML = opts.map(([v, t]) => `<option value="${esc(v)}" ${v === S.lang ? 'selected' : ''}>${esc(t)}</option>`).join('');
+}
 let qt; $('#q').oninput = e => { clearTimeout(qt); qt = setTimeout(() => { S.q = e.target.value.trim(); S.limit = 150; if (S.view === 'brief' && S.q) S.view = 'feed'; render(); }, 200); };
 function closeSide(){ $('#side').classList.remove('open'); $('#scrim').classList.remove('open'); }
 $('#placesBtn').onclick = () => { $('#side').classList.add('open'); $('#scrim').classList.add('open'); };

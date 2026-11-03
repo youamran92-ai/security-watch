@@ -29,7 +29,10 @@ import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import quote_plus
+from urllib.parse import parse_qs, quote_plus, urlparse
+import csv
+import io
+import zipfile
 
 import feedparser
 import requests
@@ -41,6 +44,7 @@ SITE = ROOT / "site"
 
 UA = "Mozilla/5.0 (compatible; SecurityWatch/1.0; +https://github.com/)"
 TIMEOUT = (8, 20)          # (connect, read) seconds
+TRANSLATE_BUDGET = 300     # seconds per run spent translating headlines
 GDELT_BUDGET = 150         # stop asking GDELT after this many seconds
 RUN_BUDGET = 480           # whole run must finish well inside GitHub's limit
 NOW = datetime.now(timezone.utc)
@@ -288,6 +292,12 @@ def parse_feed(content: bytes, default_source: str):
         src = default_source
         if e.get("source") and e.source.get("title"):
             src = clean(e.source.get("title"))
+        elif e.get("news_source"):                      # Bing News
+            src = clean(e.get("news_source"))
+        if "bing.com/news/apiclick" in link:            # Bing wraps the real link
+            real = parse_qs(urlparse(link).query).get("url")
+            if real:
+                link = real[0]
         out.append({
             "title": title,
             "url": link,
@@ -322,12 +332,20 @@ def short_err(ex) -> str:
     return str(ex)[:120]
 
 
-def gnews_url(query: str, gn: dict) -> str:
-    lang = gn.get("language", "en-US")
-    country = gn.get("country", "US")
-    q = f"when:{gn.get('when', '1d')} {query}"
+def gnews_url(query: str, ed: dict, when: str = "1d") -> str:
+    """Google News search feed. `ed` = edition: hl, gl, ceid (e.g. fr / FR / FR:fr)."""
+    hl = ed.get("hl", "en-US")
+    gl = ed.get("gl", "US")
+    ceid = ed.get("ceid") or f"{gl}:{hl.split('-')[0]}"
+    q = f"when:{when} {query}"
     return (f"https://news.google.com/rss/search?q={quote_plus(q)}"
-            f"&hl={lang}&gl={country}&ceid={country}:{lang.split('-')[0]}")
+            f"&hl={hl}&gl={gl}&ceid={quote_plus(ceid)}")
+
+
+def bing_url(query: str, market: str = "en-US") -> str:
+    """Bing News search feed, last 24 hours."""
+    return (f"https://www.bing.com/news/search?q={quote_plus(query)}&format=rss&count=100"
+            f"&mkt={market}&qft=interval%3d%227%22")
 
 
 def strip_publisher(title: str, source: str) -> str:
@@ -381,6 +399,94 @@ def fetch_gdelt(domain: str, query: str, gd: dict):
     return [], {"ok": False, "count": 0, "error": last, "ms": int((time.time() - t0) * 1000)}
 
 
+# GDELT raw event files (a separate server from the GDELT search service)
+GDELT_ROOTS = {   # CAMEO root code → (domains, severity)
+    "13": (["conflict"], 0),               # threaten
+    "14": (["political"], 0),              # protest
+    "15": (["conflict"], 0),               # military posturing
+    "17": (["political"], 1),              # coerce (arrests, crackdowns)
+    "18": (["conflict"], 1),               # assault
+    "19": (["conflict"], 1),               # fight
+    "20": (["conflict", "terrorism"], 2),  # mass violence
+}
+SLUG_JUNK = re.compile(r"^(\d+|[0-9a-f]{8,}|index|article|story|news|amp|html?|php)$", re.I)
+
+
+def slug_title(url: str):
+    path = urlparse(url).path
+    best = ""
+    for seg in path.split("/"):
+        seg = re.sub(r"\.(s?html?|php|aspx?|cms)$", "", seg, flags=re.I)
+        if seg.count("-") + seg.count("_") > best.count("-") + best.count("_"):
+            best = seg
+    words = [w for w in re.split(r"[-_+]+", best) if w and not SLUG_JUNK.match(w)]
+    if len(words) < 4:
+        return None
+    t = " ".join(words)
+    return t[:1].upper() + t[1:]
+
+
+def fetch_gdelt_files(gf: dict):
+    t0 = time.time()
+    base = "http://data.gdeltproject.org/gdeltv2/"
+    try:
+        r = session.get(base + "lastupdate.txt", timeout=TIMEOUT)
+        r.raise_for_status()
+        export = next(l.split()[-1] for l in r.text.splitlines() if ".export.CSV.zip" in l)
+        stamp = re.search(r"/(\d{14})\.export", export).group(1)
+        latest = datetime.strptime(stamp, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+        files = [base + (latest - timedelta(minutes=15 * k)).strftime("%Y%m%d%H%M%S") + ".export.CSV.zip"
+                 for k in range(int(gf.get("files", 2)))]
+        roots = {str(x) for x in gf.get("event_types", list(GDELT_ROOTS))}
+        min_sources = int(gf.get("min_sources", 1))
+        by_url: dict[str, dict] = {}
+        for f in files:
+            try:
+                z = session.get(f, timeout=(8, 60))
+                z.raise_for_status()
+            except Exception:
+                continue
+            with zipfile.ZipFile(io.BytesIO(z.content)) as zf:
+                name = zf.namelist()[0]
+                text = zf.read(name).decode("utf-8", "replace")
+            for row in csv.reader(io.StringIO(text), delimiter="\t"):
+                if len(row) < 61:
+                    continue
+                root = row[28]
+                if root not in roots or int(row[32] or 0) < min_sources:
+                    continue
+                url = row[60].strip()
+                if not url.startswith("http"):
+                    continue
+                e = by_url.setdefault(url, {"roots": set(), "places": [], "added": row[59]})
+                e["roots"].add(root)
+                place = row[52].strip()
+                if place and place not in e["places"] and len(e["places"]) < 3:
+                    e["places"].append(place)
+        items = []
+        for url, e in by_url.items():
+            title = slug_title(url)
+            if not title:
+                continue
+            doms, sev = [], 0
+            for rc in sorted(e["roots"]):
+                d, s = GDELT_ROOTS.get(rc, ([], 0))
+                doms += [x for x in d if x not in doms]
+                sev = max(sev, s)
+            try:
+                pub = datetime.strptime(e["added"], "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+            except Exception:
+                pub = None
+            items.append({"title": title, "url": url,
+                          "source": urlparse(url).netloc.replace("www.", ""),
+                          "published": pub,
+                          "summary": "Location: " + "; ".join(e["places"]) if e["places"] else "",
+                          "domains": doms, "sev": sev})
+        return items, {"ok": True, "count": len(items), "ms": int((time.time() - t0) * 1000)}
+    except Exception as ex:
+        return [], {"ok": False, "count": 0, "error": short_err(ex), "ms": int((time.time() - t0) * 1000)}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  Building items
 # ─────────────────────────────────────────────────────────────────────────────
@@ -409,10 +515,14 @@ class Builder:
     def add(self, raw: dict, via: str, *, specialist=False, domain=None, hint=None,
             drop_if=None, min_magnitude=None, forced_domain=None):
         title = raw["title"]
-        if via == "gnews":
+        orig = raw.get("orig")                 # original-language headline, if translated
+        lang = raw.get("lang", "en")
+        if via == "gnews" and not orig:
             title = strip_publisher(title, raw["source"])
         if len(title) < 12:
             return "short"
+        if lang != "en" and not orig and not specialist:
+            return "untranslated"              # can't judge relevance yet; retried next run
         if drop_if and re.search(drop_if, title, re.I):
             return "dropped"
         if min_magnitude is not None:
@@ -431,6 +541,9 @@ class Builder:
         if not specialist and self.tagger.noise and self.tagger.noise.search(title):
             return "noise"
         domains = self.tagger.tag(title, summary)
+        for d in reversed(raw.get("domains") or []):
+            if d not in domains:
+                domains.insert(0, d)
         if forced_domain and forced_domain not in domains:
             domains.insert(0, forced_domain)
         if not domains:
@@ -448,11 +561,16 @@ class Builder:
         c, r, k = self.gaz.expand(c, r, k)
 
         item = {
-            "id": make_id(title), "t": title, "u": raw["url"], "s": raw["source"],
-            "p": iso(pub), "f": iso(NOW), "x": summary[:220],
+            "id": make_id(orig or title), "t": title, "u": raw["url"], "s": raw["source"],
+            "p": iso(pub), "f": iso(NOW), "x": "" if lang != "en" else summary[:220],
             "c": c, "g": r, "k": k, "d": domains[:4],
-            "sev": self.tagger.severity(title), "v": via, "n": 1, "o": [],
+            "sev": max(self.tagger.severity(title), int(raw.get("sev", 0))),
+            "v": via, "n": 1, "o": [],
         }
+        if lang != "en":
+            item["l"] = lang
+            if orig:
+                item["ot"] = orig
         self.merge(item)
         return "kept"
 
@@ -489,8 +607,10 @@ def merge_items(cur: dict, item: dict) -> dict:
         cur["f"] = item["f"]
     if not cur.get("x") and item.get("x"):
         cur["x"] = item["x"]
+    if item.get("ot") and not cur.get("ot") and cur.get("l") == item.get("l"):
+        cur["t"], cur["ot"] = item["t"], item["ot"]
     # prefer a curated feed as the main link over aggregators
-    rank = {"rss": 0, "gnews": 1, "gdelt": 2}
+    rank = {"rss": 0, "gnews": 1, "bing": 1, "gdelt": 2, "gdeltfile": 3}
     if rank.get(item["v"], 3) < rank.get(cur["v"], 3):
         if cur["s"] != item["s"]:
             cur["o"] = [o for o in cur["o"] if o["s"] != item["s"]]
@@ -551,9 +671,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="_site", help="output folder for the website")
     ap.add_argument("--previous", help="file or URL of the last news.json (auto-detected on GitHub)")
-    ap.add_argument("--skip-gdelt", action="store_true")
-    ap.add_argument("--skip-gnews", action="store_true")
-    ap.add_argument("--skip-feeds", action="store_true")
+    ap.add_argument("--no-translate", action="store_true")
     args = ap.parse_args()
     t_start = time.time()
 
@@ -569,88 +687,145 @@ def main():
     gaz = Gazetteer(places)
     tagger = Tagger(domcfg)
     domain_ids = {d["id"] for d in tagger.meta}
-    builder = Builder(gaz, tagger, window_start)
-    status = []
 
-    def record(name, kind, url, st, raw_items, add_kwargs, via):
+    # Every source becomes a job: (name, kind, url, fetch_fn, add_kwargs, via, lang)
+    jobs = []
+
+    for feed in sources.get("feeds") or []:
+        kw = {"specialist": bool(feed.get("specialist")), "domain": feed.get("domain"),
+              "hint": feed.get("hint"), "drop_if": feed.get("drop_if"),
+              "min_magnitude": feed.get("min_magnitude")}
+        if kw["domain"] and kw["domain"] not in domain_ids:
+            log(f"  ! unknown domain '{kw['domain']}' on {feed['name']}")
+        jobs.append((feed["name"], "feed", feed["url"], lambda f=feed: fetch_feed(f), kw, "rss",
+                     feed.get("lang", "en")))
+
+    def search_jobs(engine, label, make_url, queries, lang, via):
+        for name, query, kw in queries:
+            url = make_url(query)
+            jobs.append((f"{label} · {name}", engine, url,
+                         lambda u=url, l=label: fetch_feed({"name": l, "url": u}), kw, via, lang))
+
+    gn = sources.get("google_news") or {}
+    english_queries = []
+    sec = gn.get("security_terms", "")
+    for q in gn.get("regional", []) or []:
+        english_queries.append((q["hint"], f"{sec} ({q['places']})" if sec else q["places"],
+                                {"specialist": True, "hint": q["hint"]}))
+    for q in gn.get("topical", []) or []:
+        english_queries.append((q["domain"], q["query"],
+                                {"specialist": True, "domain": q["domain"], "forced_domain": q["domain"]}))
+    when = gn.get("when", "1d")
+    if gn.get("enabled", True):
+        ed = {"hl": gn.get("language", "en-US"), "gl": gn.get("country", "US"), "ceid": gn.get("ceid")}
+        search_jobs("google_news", "Google News", lambda q, e=ed: gnews_url(q, e, when),
+                    english_queries, "en", "gnews")
+        for ed in gn.get("editions", []) or []:
+            lang = ed["lang"]
+            esec = ed.get("security_terms", "")
+            qs = [(f"{lang} · {q['hint']}", f"{esec} ({q['places']})" if esec else q["places"],
+                   {"specialist": True, "hint": q["hint"]}) for q in ed.get("queries", [])]
+            search_jobs("google_news", "Google News", lambda q, e=ed: gnews_url(q, e, when),
+                        qs, lang, "gnews")
+
+    bn = sources.get("bing_news") or {}
+    if bn.get("enabled", False):
+        search_jobs("bing_news", "Bing News", lambda q: bing_url(q, bn.get("market", "en-US")),
+                    english_queries if bn.get("use_google_queries", True) else [], "en", "bing")
+
+    gf = sources.get("gdelt_files") or {}
+    if gf.get("enabled", False):
+        jobs.append(("GDELT event files", "gdelt", "http://data.gdeltproject.org/gdeltv2/lastupdate.txt",
+                     lambda: fetch_gdelt_files(gf), {"specialist": True}, "gdeltfile", "en"))
+
+    # 1 ── fetch everything (in parallel, politely)
+    log(f"Fetching {len(jobs)} sources…")
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        results = list(pool.map(lambda j: j[3](), jobs))
+
+    gd = sources.get("gdelt") or {}
+    if gd.get("enabled", False):
+        g_start = time.time()
+        for i, (dom, query) in enumerate((gd.get("queries") or {}).items()):
+            if time.time() - g_start > GDELT_BUDGET:
+                results.append(([], {"ok": False, "count": 0, "error": "skipped — GDELT was slow"}))
+            else:
+                if i:
+                    time.sleep(5.5)
+                results.append(fetch_gdelt(dom, query, gd))
+            d = dom if dom in domain_ids else None
+            jobs.append((f"GDELT · {dom}", "gdelt", "https://api.gdeltproject.org/api/v2/doc/doc", None,
+                         {"specialist": True, "domain": d, "forced_domain": d}, "gdelt", "en"))
+
+    # 2 ── previous run (for merging, and so headlines are only translated once)
+    previous = load_previous(args.previous or previous_data_url(sources))
+    known_tr = {it["ot"]: it["t"] for it in previous if it.get("ot")}
+
+    # 3 ── translate non-English headlines
+    status = []
+    pending: dict[str, list[str]] = {}
+    for job, (raw, st) in zip(jobs, results):
+        lang = job[6]
+        for r in raw:
+            r["lang"] = lang
+            if lang == "en":
+                continue
+            t = r["title"]
+            if job[5] == "gnews":
+                t = strip_publisher(t, r["source"])
+            r["title_src"] = t
+            if t in known_tr:
+                r["orig"], r["title"] = t, known_tr[t]
+            else:
+                pending.setdefault(lang, [])
+                if t not in pending[lang]:
+                    pending[lang].append(t)
+    if pending and not args.no_translate:
+        try:
+            from translate import Translator
+            tr = Translator(session, log)
+            total = sum(len(v) for v in pending.values())
+            log(f"Translating {total} new headlines in {len(pending)} languages…")
+            deadline = time.time() + TRANSLATE_BUDGET
+            done: dict[str, str] = {}
+            for lang, texts in sorted(pending.items(), key=lambda kv: -len(kv[1])):
+                done.update(tr.translate(lang, texts, deadline))
+            for raw, _ in results:
+                for r in raw:
+                    t = r.get("title_src")
+                    if t and not r.get("orig") and t in done:
+                        r["orig"], r["title"] = t, done[t]
+            for lang, st in sorted(tr.status.items()):
+                status.append({"name": f"Translator · {lang} → en", "kind": "translator", "url": "",
+                               "ok": st["ok"], "count": len(pending.get(lang, [])), "kept": st["count"],
+                               "error": st.get("error", "")})
+                log(f"  [{'ok ' if st['ok'] else 'ERR'}] translator {lang}: {st['count']} translated"
+                    + (f" — {st['error']}" if st.get("error") else ""))
+        except Exception as ex:
+            log(f"  translator unavailable: {ex}")
+            status.append({"name": "Translator", "kind": "translator", "url": "", "ok": False,
+                           "count": 0, "kept": 0, "error": str(ex)[:120]})
+
+    # 4 ── tag and de-duplicate
+    builder = Builder(gaz, tagger, window_start)
+    src_status = []
+    for (name, kind, url, _, kw, via, lang), (raw, st) in zip(jobs, results):
         outcome = {}
-        for raw in raw_items:
-            res = builder.add(raw, via, **add_kwargs)
+        for r in raw:
+            res = builder.add(r, via, **kw)
             outcome[res] = outcome.get(res, 0) + 1
-        st.update({"name": name, "kind": kind, "url": url, "kept": outcome.get("kept", 0)})
-        status.append(st)
+        st = dict(st)
+        st.update({"name": name, "kind": kind, "url": url, "kept": outcome.get("kept", 0), "lang": lang})
+        src_status.append(st)
         flag = "ok " if st["ok"] else "ERR"
         log(f"  [{flag}] {name}: {st['count']} fetched, {st['kept']} kept"
             + (f" — {st.get('error')}" if not st["ok"] else "")
             + (f"  (dropped: {', '.join(f'{k} {v}' for k, v in outcome.items() if k != 'kept')})"
                if st["ok"] and st["kept"] < st["count"] else ""))
+    status = src_status + status
+    log(f"This run: {len(builder.items)} distinct stories")
 
-    # 1 ── RSS feeds (in parallel)
-    feeds = [] if args.skip_feeds else (sources.get("feeds") or [])
-    if feeds:
-        log(f"Fetching {len(feeds)} feeds…")
-        with ThreadPoolExecutor(max_workers=10) as pool:
-            results = list(pool.map(fetch_feed, feeds))
-        for feed, (raw, st) in zip(feeds, results):
-            kw = {"specialist": bool(feed.get("specialist")), "domain": feed.get("domain"),
-                  "hint": feed.get("hint"), "drop_if": feed.get("drop_if"),
-                  "min_magnitude": feed.get("min_magnitude")}
-            if kw["domain"] and kw["domain"] not in domain_ids:
-                log(f"  ! unknown domain '{kw['domain']}' on {feed['name']}")
-            record(feed["name"], "feed", feed["url"], st, raw, kw, "rss")
-
-    # 2 ── Google News
-    gn = sources.get("google_news") or {}
-    if gn.get("enabled", True) and not args.skip_gnews:
-        jobs = []
-        sec = gn.get("security_terms", "")
-        for q in gn.get("regional", []) or []:
-            query = f"{sec} ({q['places']})" if sec else q["places"]
-            jobs.append((f"Google News · {q['hint']}", query,
-                         {"specialist": True, "hint": q["hint"]}))
-        for q in gn.get("topical", []) or []:
-            jobs.append((f"Google News · {q['domain']}", q["query"],
-                         {"specialist": True, "domain": q["domain"],
-                          "forced_domain": q["domain"]}))
-        log(f"Running {len(jobs)} Google News searches…")
-
-        def run(job):
-            name, query, kw = job
-            url = gnews_url(query, gn)
-            raw, st = fetch_feed({"name": "Google News", "url": url})
-            return name, url, raw, st, kw
-
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            for name, url, raw, st, kw in pool.map(run, jobs):
-                record(name, "google_news", url, st, raw, kw, "gnews")
-
-    # 3 ── GDELT (sequential: 1 request per 5 seconds)
-    gd = sources.get("gdelt") or {}
-    if gd.get("enabled", True) and not args.skip_gdelt:
-        qs = gd.get("queries", {}) or {}
-        log(f"Running {len(qs)} GDELT searches…")
-        g_start = time.time()
-        for i, (dom, query) in enumerate(qs.items()):
-            spent = time.time() - g_start
-            if spent > GDELT_BUDGET or time.time() - t_start > RUN_BUDGET:
-                status.append({"name": f"GDELT · {dom}", "kind": "gdelt", "ok": False, "count": 0,
-                               "kept": 0, "url": "", "error": "skipped — GDELT was slow this run"})
-                log(f"  [ERR] GDELT · {dom}: skipped (time budget)")
-                continue
-            if i:
-                time.sleep(5.5)
-            raw, st = fetch_gdelt(dom, query, gd)
-            record(f"GDELT · {dom}", "gdelt", "https://api.gdeltproject.org/api/v2/doc/doc",
-                   st, raw, {"specialist": True,
-                             "domain": dom if dom in domain_ids else None,
-                             "forced_domain": dom if dom in domain_ids else None}, "gdelt")
-
-    fresh = len(builder.items)
-    log(f"This run: {fresh} distinct stories")
-
-    # 4 ── merge with the previous run
-    prev_src = args.previous or previous_data_url(sources)
-    previous = load_previous(prev_src)
+    # 5 ── merge with the previous run
     merged = {}
     for it in previous:
         if it.get("p", "") >= iso(window_start) and it.get("id"):
@@ -661,14 +836,13 @@ def main():
     for it in builder.items.values():
         old = merged.get(it["id"])
         merged[it["id"]] = merge_items(old, it) if old else it
-
     items = sorted(merged.values(), key=lambda i: i["p"], reverse=True)[:max_items]
 
     if not items:
         log("No items at all — every source failed. Leaving the current site untouched.")
         sys.exit(1)
 
-    # 5 ── write the site
+    # 6 ── write the site
     out = Path(args.out)
     (out / "data").mkdir(parents=True, exist_ok=True)
     if SITE.exists():

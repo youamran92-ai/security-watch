@@ -5,7 +5,7 @@ Headlines are sorted by **place** (continent → region → country) and by **do
 
 It runs entirely on GitHub's free services. Your laptop is only needed to set it up.
 
-- **GitHub Actions** collects the news every ~20 minutes from 56 RSS feeds, 32 Google News searches and 13 GDELT searches.
+- **GitHub Actions** collects the news every ~20 minutes from about 90 news feeds in 17 languages, Google News (English plus 12 other languages), Bing News, and GDELT's 15-minute event files. Non-English headlines are translated to English automatically, for free and offline.
 - **GitHub Pages** hosts the dashboard at `https://YOUR-USERNAME.github.io/security-watch/`.
 
 ---
@@ -84,7 +84,9 @@ Edit files directly on github.com: open a file, click the ✏️ pencil, change 
 
 **Adding a source:** copy one line under `feeds:` and change the name and URL. Use `specialist: true` for outlets that only cover security, and set a `hint:` (a place name from `places.yaml`) if the outlet covers one country or region.
 
-**Other languages:** in `sources.yaml`, add languages under `gdelt → languages` (e.g. `french`, `portuguese`), or add a second Google News block with `language: fr-FR, country: FR`.
+**Other languages:** add a feed with `lang: xx` (e.g. `lang: fr`), or add an edition under `google_news → editions` with its own search words in that language. Headlines are translated automatically. Translation uses free open-source [Argos Translate](https://www.argosopentech.com) models, which cover about 50 languages into English, including Arabic, Chinese, French, Spanish, Portuguese, Russian, Ukrainian, Persian, Turkish, Hindi, Urdu, Indonesian, Swahili, Japanese and Korean. Hausa, Somali and Amharic have no free model yet.
+
+**Translation on the page:** translated headlines show a small badge such as **fr → en**. Click it to see the original. Use the language menu next to "High priority only" to show English sources only, other languages only, or one language.
 
 ---
 

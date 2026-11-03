@@ -22,7 +22,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +33,14 @@ jobs:
 
       - name: Install
         run: pip install -r requirements.txt
+
+      # Translation models are downloaded once, then reused from this cache.
+      - name: Translation models cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/securitywatch-models
+          key: translation-models-v1-${{ hashFiles('config/sources.yaml') }}
+          restore-keys: translation-models-v1-
 
       - name: Collect and tag the news
         run: python scripts/fetch.py --out _site

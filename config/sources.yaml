@@ -24,6 +24,8 @@ settings:
 #                 (a continent, region or country exactly as written in places.yaml)
 #  drop_if:       regex — skip items whose headline matches
 #  min_magnitude: for earthquake feeds — skip anything smaller
+#  lang:          language of the feed (fr, es, ar …). Non-English headlines are
+#                 translated to English automatically. Default: en
 feeds:
   # Global news desks (filtered to security-relevant stories)
   - {name: BBC World,            url: "https://feeds.bbci.co.uk/news/world/rss.xml"}
@@ -90,6 +92,47 @@ feeds:
   - {name: ReliefWeb disasters,  url: "https://reliefweb.int/disasters/rss.xml",      specialist: true, domain: disaster}
   - {name: WHO news,             url: "https://www.who.int/rss-feeds/news-english.xml", specialist: true, domain: health}
 
+  # Official & institutional (English)
+  - {name: UK Foreign Office,    url: "https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom", specialist: true, domain: diplomacy}
+  - {name: UK Ministry of Defence, url: "https://www.gov.uk/government/organisations/ministry-of-defence.atom", specialist: true, domain: conflict, hint: United Kingdom}
+  - {name: US State Department,  url: "https://www.state.gov/rss-feed/press-releases/feed/",  specialist: true, domain: diplomacy}
+  - {name: US Defense Department, url: "https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=20", specialist: true, domain: conflict, hint: United States}
+  - {name: NATO news,            url: "https://www.nato.int/cps/rss/en/natohq/rssFeed.xsl/rssFeed.xml", specialist: true, domain: diplomacy, hint: Europe}
+  - {name: UN Press (meetings),  url: "https://press.un.org/en/rss.xml",                     specialist: true, domain: diplomacy}
+  - {name: ReliefWeb updates,    url: "https://reliefweb.int/updates/rss.xml",              specialist: true, domain: health}
+  - {name: UNHCR news,           url: "https://www.unhcr.org/rss/news.xml",                 specialist: true, domain: migration}
+  - {name: IAEA news,            url: "https://www.iaea.org/feeds/topnews",                 specialist: true, domain: wmd}
+
+  # Other languages — translated to English automatically
+  - {name: BBC Afrique,          url: "https://feeds.bbci.co.uk/afrique/rss.xml",    lang: fr, hint: Africa}
+  - {name: RFI Afrique,          url: "https://www.rfi.fr/fr/afrique/rss",           lang: fr, hint: Africa}
+  - {name: Le Monde Afrique,     url: "https://www.lemonde.fr/afrique/rss_full.xml", lang: fr, hint: Africa}
+  - {name: Le Monde International, url: "https://www.lemonde.fr/international/rss_full.xml", lang: fr}
+  - {name: Jeune Afrique,        url: "https://www.jeuneafrique.com/feed/",          lang: fr, hint: Africa}
+  - {name: France 24 (français), url: "https://www.france24.com/fr/rss",             lang: fr}
+  - {name: BBC Mundo,            url: "https://feeds.bbci.co.uk/mundo/rss.xml",      lang: es, hint: Americas}
+  - {name: El País Internacional, url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/internacional/portada", lang: es}
+  - {name: France 24 (español),  url: "https://www.france24.com/es/rss",             lang: es}
+  - {name: DW (español),         url: "https://rss.dw.com/rdf/rss-sp-all",           lang: es}
+  - {name: BBC Brasil,           url: "https://feeds.bbci.co.uk/portuguese/rss.xml", lang: pt, hint: Brazil}
+  - {name: Folha Mundo,          url: "https://feeds.folha.uol.com.br/mundo/rss091.xml", lang: pt}
+  - {name: DW (português),       url: "https://rss.dw.com/rdf/rss-br-all",           lang: pt}
+  - {name: BBC Arabic,           url: "https://feeds.bbci.co.uk/arabic/rss.xml",     lang: ar, hint: Middle East}
+  - {name: France 24 (عربي),     url: "https://www.france24.com/ar/rss",             lang: ar, hint: Middle East}
+  - {name: DW (عربي),            url: "https://rss.dw.com/rdf/rss-ar-all",           lang: ar, hint: Middle East}
+  - {name: BBC Persian,          url: "https://feeds.bbci.co.uk/persian/rss.xml",    lang: fa, hint: Iran}
+  - {name: BBC Turkish,          url: "https://feeds.bbci.co.uk/turkce/rss.xml",     lang: tr, hint: Türkiye}
+  - {name: BBC Russian,          url: "https://feeds.bbci.co.uk/russian/rss.xml",    lang: ru, hint: Eastern Europe & Caucasus}
+  - {name: Meduza (русский),     url: "https://meduza.io/rss/all",                   lang: ru, hint: Russia}
+  - {name: DW (русский),         url: "https://rss.dw.com/rdf/rss-ru-all",           lang: ru}
+  - {name: BBC Ukrainian,        url: "https://feeds.bbci.co.uk/ukrainian/rss.xml",  lang: uk, hint: Ukraine}
+  - {name: BBC Chinese,          url: "https://feeds.bbci.co.uk/zhongwen/simp/rss.xml", lang: zh, hint: East Asia}
+  - {name: BBC Hindi,            url: "https://feeds.bbci.co.uk/hindi/rss.xml",      lang: hi, hint: India}
+  - {name: BBC Urdu,             url: "https://feeds.bbci.co.uk/urdu/rss.xml",       lang: ur, hint: Pakistan}
+  - {name: BBC Indonesia,        url: "https://feeds.bbci.co.uk/indonesia/rss.xml",  lang: id, hint: Indonesia}
+  - {name: BBC Swahili,          url: "https://feeds.bbci.co.uk/swahili/rss.xml",    lang: sw, hint: East Africa & Horn}
+  - {name: Tagesschau,           url: "https://www.tagesschau.de/xml/rss2",          lang: de, hint: Europe}
+
 # ── 2. GOOGLE NEWS SEARCHES ──────────────────────────────────────────────────
 #  Each search scans thousands of outlets. This is what guarantees every
 #  region is covered, including places the feeds above rarely mention.
@@ -137,6 +180,119 @@ google_news:
     - {domain: space,     query: 'satellite OR "GPS jamming" OR "anti-satellite" OR "space force"'}
     - {domain: economic,  query: '"export controls" OR "critical minerals" OR "energy security" OR "oil supply"'}
 
+  # Other-language editions: local reporting English searches miss.
+  # Headlines are translated to English automatically.
+  # hl / gl / ceid are Google's language, country and edition codes.
+  editions:
+    - lang: fr
+      hl: fr
+      gl: FR
+      ceid: "FR:fr"
+      security_terms: '(attaque OR armée OR militaires OR jihadistes OR "coup d''État" OR manifestation OR affrontements OR tués)'
+      queries:
+        - {hint: West Africa,     places: 'Mali OR "Burkina Faso" OR Niger OR Sahel OR Guinée OR Sénégal OR Bénin OR Togo OR "Côte d''Ivoire"'}
+        - {hint: Central Africa,  places: 'Cameroun OR Centrafrique OR RDC OR "RD Congo" OR Tchad OR Gabon OR Burundi'}
+        - {hint: North Africa,    places: 'Algérie OR Tunisie OR Maroc OR Libye'}
+        - {hint: Haiti,           places: 'Haïti OR Port-au-Prince'}
+        - {hint: Levant,          places: 'Liban OR Syrie'}
+        - {hint: Western Europe,  places: 'France OR Belgique OR Europe'}
+        - {hint: Pacific Islands, places: '"Nouvelle-Calédonie" OR Vanuatu'}
+    - lang: es
+      hl: es-419
+      gl: MX
+      ceid: "MX:es-419"
+      security_terms: '(ataque OR militares OR ejército OR "golpe de Estado" OR protestas OR enfrentamientos OR muertos OR cártel)'
+      queries:
+        - {hint: Mexico,                     places: 'México OR Sinaloa OR Michoacán OR Guerrero'}
+        - {hint: Central America & Caribbean, places: 'Guatemala OR Honduras OR "El Salvador" OR Nicaragua OR Panamá OR Cuba OR Haití'}
+        - {hint: South America,              places: 'Colombia OR Venezuela OR Ecuador OR Perú OR Bolivia'}
+        - {hint: South America,              places: 'Argentina OR Chile OR Paraguay OR Uruguay OR Brasil'}
+        - {hint: Spain,                      places: 'España'}
+    - lang: pt
+      hl: pt-BR
+      gl: BR
+      ceid: "BR:pt-419"
+      security_terms: '(ataque OR militares OR exército OR golpe OR protestos OR confrontos OR mortos OR facção)'
+      queries:
+        - {hint: Brazil,          places: 'Brasil OR Amazônia OR "Rio de Janeiro" OR "São Paulo"'}
+        - {hint: Africa,          places: 'Moçambique OR Angola OR "Guiné-Bissau" OR "Cabo Verde" OR "Cabo Delgado"'}
+        - {hint: Portugal,        places: 'Portugal'}
+    - lang: ar
+      hl: ar
+      gl: EG
+      ceid: "EG:ar"
+      security_terms: '(هجوم OR قصف OR الجيش OR مسلحين OR انقلاب OR احتجاجات OR اشتباكات OR قتلى)'
+      queries:
+        - {hint: Sudan,                    places: 'السودان OR الخرطوم OR دارفور'}
+        - {hint: Yemen,                    places: 'اليمن OR الحوثي'}
+        - {hint: Levant,                   places: 'سوريا OR لبنان OR غزة OR فلسطين OR الأردن'}
+        - {hint: Iraq,                     places: 'العراق OR بغداد'}
+        - {hint: North Africa,             places: 'ليبيا OR تونس OR الجزائر OR المغرب OR مصر'}
+        - {hint: Somalia,                  places: 'الصومال OR مقديشو'}
+        - {hint: Gulf & Arabian Peninsula, places: 'السعودية OR الإمارات OR قطر OR الخليج OR "البحر الأحمر"'}
+    - lang: ru
+      hl: ru
+      gl: RU
+      ceid: "RU:ru"
+      security_terms: '(атака OR удар OR армия OR военные OR обстрел OR беспилотник OR протесты OR погибли)'
+      queries:
+        - {hint: Ukraine,          places: 'Украина OR Донбасс OR Херсон OR Харьков'}
+        - {hint: Russia,           places: 'Россия OR Москва OR Курск OR Белгород'}
+        - {hint: Eastern Europe & Caucasus, places: 'Беларусь OR Молдавия OR Армения OR Азербайджан OR Грузия'}
+        - {hint: Central Asia,     places: 'Казахстан OR Узбекистан OR Киргизия OR Таджикистан OR Туркмения'}
+    - lang: uk
+      hl: uk
+      gl: UA
+      ceid: "UA:uk"
+      security_terms: '(атака OR удар OR обстріл OR армія OR дрони OR загиблі)'
+      queries:
+        - {hint: Ukraine,          places: 'Україна OR фронт OR Харків OR Одеса OR Запоріжжя'}
+    - lang: zh-TW
+      hl: zh-TW
+      gl: TW
+      ceid: "TW:zh-Hant"
+      security_terms: '(軍演 OR 解放軍 OR 攻擊 OR 衝突 OR 制裁 OR 飛彈 OR 軍事)'
+      queries:
+        - {hint: Taiwan,           places: '台灣 OR 台海'}
+        - {hint: China,            places: '中國 OR 中共 OR 香港'}
+        - {hint: Southeast Asia,   places: '南海 OR 菲律賓'}
+        - {hint: North Korea,      places: '北韓 OR 朝鮮'}
+    - lang: tr
+      hl: tr
+      gl: TR
+      ceid: "TR:tr"
+      security_terms: '(saldırı OR asker OR operasyon OR terör OR çatışma OR protesto)'
+      queries:
+        - {hint: "Iran, Iraq & Türkiye", places: 'Türkiye OR Suriye OR Irak OR İran'}
+    - lang: id
+      hl: id
+      gl: ID
+      ceid: "ID:id"
+      security_terms: '(serangan OR militer OR TNI OR teroris OR bentrok OR demo)'
+      queries:
+        - {hint: Southeast Asia,   places: 'Indonesia OR Papua OR Filipina OR Myanmar OR "Laut China Selatan"'}
+    - lang: hi
+      hl: hi
+      gl: IN
+      ceid: "IN:hi"
+      security_terms: '(हमला OR सेना OR आतंकवादी OR मुठभेड़ OR सीमा)'
+      queries:
+        - {hint: South Asia,       places: 'भारत OR पाकिस्तान OR कश्मीर OR मणिपुर OR बांग्लादेश'}
+    - lang: ja
+      hl: ja
+      gl: JP
+      ceid: "JP:ja"
+      security_terms: '(ミサイル OR 自衛隊 OR 中国軍 OR 領空侵犯 OR 演習)'
+      queries:
+        - {hint: East Asia,        places: '日本 OR 北朝鮮 OR 尖閣 OR 台湾'}
+    - lang: ko
+      hl: ko
+      gl: KR
+      ceid: "KR:ko"
+      security_terms: '(미사일 OR 군사 OR 도발 OR 훈련 OR 무인기)'
+      queries:
+        - {hint: East Asia,        places: '북한 OR 한국 OR 휴전선'}
+
 # ── 3. GDELT ─────────────────────────────────────────────────────────────────
 #  GDELT watches news worldwide and refreshes every 15 minutes.
 #  One search per domain; GDELT allows one request every 5 seconds.
@@ -155,6 +311,25 @@ gdelt:
     security: '(airstrike OR shelling OR coup OR terrorist OR militants OR "armed clashes" OR insurgents)'
     threats:  '(cyberattack OR ransomware OR sanctions OR "ballistic missile" OR piracy OR warship)'
     hazards:  '(outbreak OR earthquake OR flooding OR cyclone OR refugees OR famine)'
+
+# ── 3b. BING NEWS ────────────────────────────────────────────────────────────
+#  A second search engine: runs the same English searches as Google News above,
+#  so stories Google misses still come through. Duplicates are merged.
+bing_news:
+  enabled: true
+  market: en-US
+  use_google_queries: true
+
+# ── 3c. GDELT EVENT FILES ────────────────────────────────────────────────────
+#  GDELT also publishes its raw event data as files every 15 minutes, from a
+#  different server than the search above. Each event comes with a location
+#  and type (protest, assault, fighting, mass violence…). Headlines are built
+#  from the article's web address, so they read a little rough.
+gdelt_files:
+  enabled: true
+  files: 2               # how many 15-minute files to read per run
+  event_types: [14, 17, 18, 19, 20]   # protest, coerce, assault, fight, mass violence
+  min_sources: 1
 
 # ── 4. REFERENCE DESK ────────────────────────────────────────────────────────
 #  The "Links" tab: live maps, trackers and institutions — your start page.
