@@ -8,6 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%23f2a541' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%23f2a541' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23f2a541'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -192,6 +193,30 @@ table.matrix{border-collapse:separate;border-spacing:3px;width:100%;min-width:76
 .top-list .card{box-shadow:none}
 .mini{font-size:12.5px;color:var(--muted)}
 
+/* ── map ────────────────────────────────────────────── */
+.mapbox{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel-2)}
+#map{height:calc(100vh - 290px);min-height:420px;background:var(--panel-2)}
+.map-legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:12px;color:var(--muted);margin:10px 2px 0}
+.map-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.map-legend i.ring{background:transparent!important;border:2px dashed var(--muted)}
+.leaflet-container{font:13px/1.4 var(--sans)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel);color:var(--text);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.leaflet-popup-content{margin:12px 14px;width:290px!important}
+.pop h4{margin:0 0 2px;font-size:14px}
+.pop .pm{font-size:12px;color:var(--muted);margin-bottom:8px}
+.pop ul{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:7px;max-height:220px;overflow:auto}
+.pop li{border-left:3px solid transparent;padding-left:7px}
+.pop li.s2{border-left-color:var(--high)}
+.pop li.s1{border-left-color:var(--elev)}
+.pop li a{color:var(--text);text-decoration:none;font-weight:500}
+.pop li a:hover{color:var(--accent)}
+.pop li small{display:block;color:var(--faint);font-size:11.5px}
+.pop button{width:100%;padding:7px;border-radius:7px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.pop button:hover{background:var(--accent);color:var(--panel)}
+.leaflet-tooltip.cnt{background:none;border:0;box-shadow:none;color:#fff;font:600 11px var(--mono);text-shadow:0 1px 2px rgba(0,0,0,.6);padding:0}
+.leaflet-tooltip.cnt::before{display:none}
+.leaflet-control-attribution{font-size:10px}
+
 /* ── links ──────────────────────────────────────────── */
 .links{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
 .lg h2{margin:0 0 8px;font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
@@ -274,6 +299,7 @@ footer a{color:var(--muted)}
   <main>
     <nav class="tabs" id="tabs">
       <button class="tab" data-v="brief">Briefing</button>
+      <button class="tab" data-v="map">Map</button>
       <button class="tab" data-v="feed">Feed <span class="badge" id="feedCount"></span></button>
       <button class="tab" data-v="watch">Watchlist <span class="badge" id="watchCount"></span></button>
       <button class="tab" data-v="links">Links</button>
@@ -332,6 +358,7 @@ applyTheme();
 $('#themeBtn').onclick = () => {
   const dark = theme === 'dark' || (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
   theme = dark ? 'light' : 'dark'; save('sw.theme', theme); applyTheme();
+  if (S.view === 'map') render();
 };
 
 // ── URL hash ⇄ state (so any view can be bookmarked) ─────────────────────
@@ -435,12 +462,12 @@ function render(){
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.v === S.view));
   document.querySelectorAll('#win button').forEach(b => b.classList.toggle('on', +b.dataset.h === S.win));
   $('#highBtn').classList.toggle('on', S.high);
-  const filterViews = ['brief', 'feed', 'watch'];
+  const filterViews = ['brief', 'feed', 'watch', 'map'];
   $('#toolbar').style.display = filterViews.includes(S.view) ? '' : 'none';
-  $('#chips').style.display = ['feed', 'watch'].includes(S.view) ? '' : 'none';
+  $('#chips').style.display = ['feed', 'watch', 'map'].includes(S.view) ? '' : 'none';
   $('#crumbs').style.display = S.view === 'feed' ? '' : 'none';
   updateStatus(); renderTree(); renderChips(); renderCrumbs(); renderCounts();
-  ({brief: renderBrief, feed: renderFeed, watch: renderWatch, links: renderLinks, sources: renderSources}[S.view] || renderBrief)();
+  ({brief: renderBrief, map: renderMap, feed: renderFeed, watch: renderWatch, links: renderLinks, sources: renderSources}[S.view] || renderBrief)();
   renderFoot();
 }
 function updateStatus(){
@@ -461,7 +488,7 @@ function renderCounts(){
   $('#srcCount').textContent = bad ? `${bad} down` : '';
 }
 function renderChips(){
-  const base = S.items.filter(i => passes(i, {dom: false, geo: S.view !== 'watch'}) && (S.view !== 'watch' || watchMatch(i)));
+  const base = S.items.filter(i => passes(i, {dom: false, geo: !['watch', 'map'].includes(S.view)}) && (S.view !== 'watch' || watchMatch(i)));
   const cnt = {}; for (const it of base) for (const d of it.d) cnt[d] = (cnt[d] || 0) + 1;
   $('#chips').innerHTML = S.domains.filter(d => cnt[d.id] || S.doms.has(d.id)).map(d =>
     `<button class="chip ${S.doms.has(d.id) ? 'on' : ''}" data-d="${esc(d.id)}" style="${S.doms.has(d.id) ? 'color:' + d.color : ''}"><i style="background:${d.color}"></i><span style="color:var(--text)">${esc(d.label)}</span><span class="n">${cnt[d.id] || 0}</span></button>`
@@ -662,6 +689,153 @@ function renderBrief(){
       <div class="panel"><div class="panel-h"><h2>Top stories</h2><span>most severe and most widely reported</span></div><div class="panel-b top-list">${top.length ? `<div class="list">${top.map(card).join('')}</div>` : '<div class="mini">No major stories in this window.</div>'}</div></div>
     </div>`;
 }
+
+
+// ── map ──────────────────────────────────────────────────────────────────
+// Approximate centre points. Countries use their own; reports that only name a
+// region (e.g. "Sahel", "Red Sea", "Arctic") are drawn at the region's point.
+const COORDS = {
+'Algeria':[28,2.6],'Egypt':[26.5,30],'Libya':[27,17],'Morocco':[31.8,-7],'Tunisia':[34,9.5],'Western Sahara':[24.5,-13],
+'Benin':[9.5,2.3],'Burkina Faso':[12.3,-1.6],'Cabo Verde':[15.1,-23.6],"Côte d'Ivoire":[7.6,-5.5],'Gambia':[13.45,-15.4],'Ghana':[7.9,-1],
+'Guinea':[10.4,-10.9],'Guinea-Bissau':[12,-15],'Liberia':[6.4,-9.4],'Mali':[17.5,-3.5],'Mauritania':[20.3,-10.3],'Niger':[17.6,8.1],
+'Nigeria':[9.1,8.7],'Senegal':[14.5,-14.4],'Sierra Leone':[8.5,-11.8],'Togo':[8.6,1],
+'Cameroon':[5.7,12.4],'Central African Republic':[6.6,20.9],'Chad':[15.4,18.7],'Republic of the Congo':[-0.7,15.2],'DR Congo':[-2.9,23.6],
+'Equatorial Guinea':[1.6,10.4],'Gabon':[-0.8,11.6],'Sao Tome and Principe':[0.3,6.7],
+'Burundi':[-3.4,29.9],'Djibouti':[11.8,42.6],'Eritrea':[15.2,39.8],'Ethiopia':[8.6,39.6],'Kenya':[0.2,37.9],'Rwanda':[-2,29.9],
+'Somalia':[3.5,45.5],'Somaliland':[9.6,45.5],'South Sudan':[7.3,30.2],'Sudan':[15.5,30],'Tanzania':[-6.3,34.9],'Uganda':[1.4,32.4],
+'Angola':[-12.3,17.5],'Botswana':[-22.3,24.7],'Comoros':[-11.9,43.9],'Eswatini':[-26.5,31.5],'Lesotho':[-29.6,28.2],'Madagascar':[-19,46.9],
+'Malawi':[-13.3,34.3],'Mauritius':[-20.3,57.6],'Mozambique':[-18.7,35.5],'Namibia':[-22.6,17.1],'Seychelles':[-4.7,55.5],
+'South Africa':[-30.6,23.9],'Zambia':[-13.1,27.8],'Zimbabwe':[-19,29.2],
+'United States':[39.5,-98.5],'Canada':[56.1,-106.3],'Mexico':[23.6,-102.5],'Greenland':[72,-40],
+'Antigua and Barbuda':[17.1,-61.8],'Bahamas':[24.7,-77.8],'Barbados':[13.2,-59.5],'Belize':[17.2,-88.5],'Costa Rica':[9.7,-84],'Cuba':[21.5,-79.5],
+'Dominica':[15.4,-61.4],'Dominican Republic':[18.9,-70.2],'El Salvador':[13.8,-88.9],'Grenada':[12.1,-61.7],'Guatemala':[15.8,-90.2],
+'Haiti':[19,-72.5],'Honduras':[15.2,-86.2],'Jamaica':[18.1,-77.3],'Nicaragua':[12.9,-85.2],'Panama':[8.5,-80.8],'Puerto Rico':[18.2,-66.5],
+'Saint Kitts and Nevis':[17.3,-62.7],'Saint Lucia':[13.9,-61],'Saint Vincent and the Grenadines':[13.25,-61.2],'Trinidad and Tobago':[10.7,-61.2],
+'Argentina':[-38.4,-63.6],'Bolivia':[-16.3,-63.6],'Brazil':[-10.3,-53.2],'Chile':[-35.7,-71.5],'Colombia':[4.6,-74.1],'Ecuador':[-1.8,-78.2],
+'Falkland Islands':[-51.8,-59.5],'Guyana':[4.9,-58.9],'Paraguay':[-23.4,-58.4],'Peru':[-9.2,-75],'Suriname':[3.9,-56],'Uruguay':[-32.5,-55.8],'Venezuela':[6.4,-66.6],
+'China':[35.9,104.2],'Taiwan':[23.7,121],'Japan':[36.2,138.3],'North Korea':[40.3,127.5],'South Korea':[36.5,127.8],'Mongolia':[46.9,103.8],
+'Brunei':[4.5,114.7],'Cambodia':[12.6,105],'Indonesia':[-2.5,118],'Laos':[19.9,102.5],'Malaysia':[4.2,102],'Myanmar':[21.9,96],
+'Philippines':[12.9,121.8],'Singapore':[1.35,103.8],'Thailand':[15.9,100.9],'Timor-Leste':[-8.9,125.7],'Vietnam':[14.1,108.3],
+'Afghanistan':[33.9,67.7],'Bangladesh':[23.7,90.4],'Bhutan':[27.5,90.4],'India':[21,78.9],'Maldives':[3.2,73.2],'Nepal':[28.4,84.1],
+'Pakistan':[30.4,69.3],'Sri Lanka':[7.9,80.8],
+'Kazakhstan':[48,67],'Kyrgyzstan':[41.2,74.8],'Tajikistan':[38.9,71.3],'Turkmenistan':[39,59.6],'Uzbekistan':[41.4,64.6],
+'Israel':[32.3,35],'Palestine':[31.5,34.45],'Lebanon':[33.9,35.9],'Syria':[35,38.5],'Jordan':[31,36.5],
+'Saudi Arabia':[23.9,45.1],'United Arab Emirates':[23.4,53.8],'Qatar':[25.3,51.2],'Bahrain':[26,50.55],'Kuwait':[29.3,47.5],'Oman':[21.5,55.9],'Yemen':[15.6,48.5],
+'Iran':[32.4,53.7],'Iraq':[33.2,43.7],'Türkiye':[39,35.2],
+'United Kingdom':[54,-2.5],'Ireland':[53.2,-8],'France':[46.6,2.4],'Germany':[51.2,10.4],'Netherlands':[52.2,5.3],'Belgium':[50.6,4.5],
+'Luxembourg':[49.8,6.1],'Austria':[47.5,14.5],'Switzerland':[46.8,8.2],'Liechtenstein':[47.15,9.55],'Monaco':[43.74,7.42],
+'Denmark':[56,10],'Estonia':[58.6,25],'Finland':[64,26],'Iceland':[65,-18.5],'Latvia':[56.9,24.6],'Lithuania':[55.2,23.9],'Norway':[61,9],'Sweden':[62,15],
+'Andorra':[42.5,1.5],'Cyprus':[35.1,33.4],'Greece':[39.1,22],'Italy':[42.8,12.6],'Malta':[35.9,14.4],'Portugal':[39.6,-8],
+'San Marino':[43.94,12.46],'Spain':[40.2,-3.7],'Vatican':[41.9,12.45],
+'Albania':[41.1,20.1],'Bosnia and Herzegovina':[44.2,17.8],'Bulgaria':[42.7,25.5],'Croatia':[45.1,15.2],'Czechia':[49.8,15.5],'Hungary':[47.2,19.5],
+'Kosovo':[42.6,20.9],'Montenegro':[42.7,19.4],'North Macedonia':[41.6,21.7],'Poland':[52,19.1],'Romania':[45.9,24.9],'Serbia':[44,20.9],
+'Slovakia':[48.7,19.7],'Slovenia':[46.15,15],
+'Russia':[57,50],'Belarus':[53.7,28],'Moldova':[47.4,28.4],'Ukraine':[48.4,31.2],'Armenia':[40.1,45],'Azerbaijan':[40.1,47.6],'Georgia':[42.3,43.4],
+'Australia':[-25.3,133.8],'New Zealand':[-41,174],'Fiji':[-17.7,178],'Kiribati':[1.4,173],'Marshall Islands':[7.1,171.2],'Micronesia':[6.9,158.2],
+'Nauru':[-0.5,166.9],'Palau':[7.5,134.6],'Papua New Guinea':[-6.3,145],'Samoa':[-13.8,-172.1],'Solomon Islands':[-9.6,160.2],'Tonga':[-21.2,-175.2],
+'Tuvalu':[-8.5,179.2],'Vanuatu':[-15.4,166.9],'New Caledonia':[-21.3,165.6],
+};
+const REGION_COORDS = {
+'North Africa':[29,10],'West Africa':[13,-4],'Central Africa':[2,18],'East Africa & Horn':[6,41],'Southern Africa':[-23,26],
+'North America':[46,-98],'Central America & Caribbean':[16,-76],'South America':[-14,-60],
+'East Asia':[36,122],'Southeast Asia':[7,111],'South Asia':[19,81],'Central Asia':[44,66],
+'Levant':[34,37],'Gulf & Arabian Peninsula':[19,44],'Iran, Iraq & Türkiye':[36,45],
+'Western Europe':[49,4],'Northern Europe':[59,18],'Southern Europe':[40,14],'Central Europe & Balkans':[46,21],'Eastern Europe & Caucasus':[50,40],
+'Australia & New Zealand':[-32,148],'Pacific Islands':[-12,172],'Arctic':[78,25],'Antarctica':[-75,0],
+};
+let leafletP = null, MAP = null, mapLayer = null, tiles = null, mapDark = null;
+function loadLeaflet(){
+  if (window.L) return Promise.resolve();
+  if (!leafletP) leafletP = new Promise((ok, bad) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    sc.onload = ok; sc.onerror = () => { leafletP = null; bad(new Error('map library')); };
+    document.head.appendChild(sc);
+  });
+  return leafletP;
+}
+function isDark(){ return theme === 'dark' || (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches); }
+function setTiles(){
+  const dark = isDark();
+  if (tiles && mapDark === dark) return;
+  if (tiles) MAP.removeLayer(tiles);
+  mapDark = dark;
+  tiles = L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`, {
+    subdomains: 'abcd', maxZoom: 10, minZoom: 1,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  }).addTo(MAP);
+}
+function renderMap(){
+  const items = S.items.filter(i => passes(i, {geo: false}));
+  // group: countries, plus region-only reports
+  const groups = new Map();
+  let offMap = 0;
+  for (const it of items) {
+    let placed = false;
+    for (const c of it.c || []) if (COORDS[c]) { add('country', c, COORDS[c], it); placed = true; }
+    if (!placed) for (const g of it.g || []) if (REGION_COORDS[g]) { add('region', g, REGION_COORDS[g], it); placed = true; }
+    if (!placed) offMap++;
+  }
+  function add(type, name, ll, it){
+    const k = type + ':' + name;
+    const g = groups.get(k) || {type, name, ll, items: [], hi: 0, el: 0};
+    g.items.push(it); if (it.sev === 2) g.hi++; else if (it.sev === 1) g.el++;
+    groups.set(k, g);
+  }
+  const placedN = items.length - offMap;
+  if (!$('#map')) {
+    $('#view').innerHTML = `<div class="mapbox"><div id="map"></div></div>
+      <div class="map-legend">
+        <span><i style="background:var(--high)"></i>many high-priority reports</span>
+        <span><i style="background:var(--elev)"></i>some high-priority or elevated</span>
+        <span><i style="background:var(--accent)"></i>routine coverage</span>
+        <span><i class="ring"></i>region-wide (no single country named)</span>
+        <span>· circle size = number of reports</span>
+        <span id="mapNote"></span>
+      </div>`;
+    MAP = null; tiles = null; mapDark = null;
+  }
+  $('#mapNote').textContent = `· ${fmtN(placedN)} reports on the map` + (offMap ? `, ${fmtN(offMap)} without a location` : '');
+  loadLeaflet().then(() => {
+    if (!MAP) {
+      MAP = L.map('map', {worldCopyJump: true, zoomControl: true, minZoom: 1, attributionControl: true}).setView([20, 15], innerWidth < 600 ? 1 : 2);
+      mapLayer = L.layerGroup().addTo(MAP);
+    }
+    setTiles();
+    mapLayer.clearLayers();
+    const max = Math.max(1, ...[...groups.values()].map(g => g.items.length));
+    const css = getComputedStyle(document.documentElement);
+    const col = {hi: css.getPropertyValue('--high').trim(), el: css.getPropertyValue('--elev').trim(), base: css.getPropertyValue('--accent').trim()};
+    const sorted = [...groups.values()].sort((a, b) => b.items.length - a.items.length);
+    for (const g of sorted) {
+      const n = g.items.length;
+      // red = a large share of severe reports; amber = some; neutral = routine coverage
+      const color = (g.hi >= 5 || g.hi / n >= 0.25) ? col.hi : (g.hi || (g.el / n) >= 0.4) ? col.el : col.base;
+      const r = (innerWidth < 600 ? 4 : 5) + (innerWidth < 600 ? 14 : 24) * Math.sqrt(n / max);
+      const m = L.circleMarker(g.ll, {
+        radius: r, color, weight: g.type === 'region' ? 2 : 1.5, dashArray: g.type === 'region' ? '4 4' : null,
+        fillColor: color, fillOpacity: g.type === 'region' ? 0.08 : 0.38, opacity: 0.95,
+      }).addTo(mapLayer);
+      if (r >= 11) m.bindTooltip(String(n), {permanent: true, direction: 'center', className: 'cnt'});
+      const top = g.items.slice().sort((a, b) => (b.sev - a.sev) || (b.ts - a.ts)).slice(0, 6);
+      m.bindPopup(() => `<div class="pop"><h4>${esc(g.name)}</h4>
+        <div class="pm">${n} report${n > 1 ? 's' : ''} in ${S.win}h${g.hi ? ` · <span style="color:var(--high)">${g.hi} high priority</span>` : ''}${g.type === 'region' ? ' · region-wide' : ''}</div>
+        <ul>${top.map(it => `<li class="s${it.sev}"><a href="${esc(it.u)}" target="_blank" rel="noopener noreferrer">${esc(it.t)}</a><small>${esc(it.s)} · ${ago(it.ts)}</small></li>`).join('')}</ul>
+        <button data-mapgo="${esc(g.type + ':' + g.name)}">Open all ${n} in Feed →</button></div>`, {maxWidth: 320});
+    }
+    // zoom to a selected place from the Places list
+    if (S.geo && S.geo.type === 'country' && COORDS[S.geo.name]) MAP.setView(COORDS[S.geo.name], 5);
+    else if (S.geo && S.geo.type === 'region' && REGION_COORDS[S.geo.name]) MAP.setView(REGION_COORDS[S.geo.name], 4);
+    setTimeout(() => MAP.invalidateSize(), 50);
+  }).catch(() => {
+    $('#map').innerHTML = '<div class="empty" style="margin:20px"><h3>The map couldn\'t load</h3><div>Check your internet connection and refresh.</div></div>';
+  });
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-mapgo]');
+  if (b) { if (MAP) MAP.closePopup(); setGeo(b.dataset.mapgo, 'feed'); }
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (MAP) setTiles(); });
 
 function renderLinks(){
   const groups = S.data.links || [];
