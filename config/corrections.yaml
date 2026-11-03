@@ -1,0 +1,35 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  CORRECTIONS — fix places the automatic tagging gets wrong
+#
+#  Edit this file on github.com (pencil icon). The site rebuilds in a few
+#  minutes and the fix also applies to stories already on the page.
+#
+#  ONE STORY: click "Wrong place?" on any story, choose the right place, and
+#  paste the line it gives you under "stories:". It looks like this:
+#      - {id: f2aa27bb1c42, place: Nigeria}
+#  "place" is a country, region or continent, spelled as in places.yaml.
+#
+#  A REPEATING MISTAKE: add a rule. A rule changes stories tagged with "remove".
+#      if:      words in the headline or summary (a regular expression)
+#      source:  words in the outlet name or link
+#      unless:  skip the story if the headline or summary has these words
+#      remove:  the wrong country
+#      add:     the right country (optional)
+# ─────────────────────────────────────────────────────────────────────────────
+
+stories: []
+
+rules:
+  # Niger State (Nigeria) being tagged as the country Niger.
+  - if: 'Niger State|Niger Governor|Governor of Niger|Minna|Kontagora|Suleja|Mokwa|Shiroro'
+    remove: Niger
+    add: Nigeria
+  # Nigerian outlets usually mean Niger State. They write "Niger Republic" for the country.
+  - source: '\.ng\b|Nigeria|\(NG\)|\bNG\b|Punch|Vanguard|Daily Trust|Channels|Leadership|Tribune Online|Businessday|Daily Post|Premium Times|Legit|Sahara ?Reporters|The Cable'
+    unless: &niger_country 'Niger Republic|Republic of Niger|Republique du Niger|Niamey|Nigerien|Tchiani|Tiani|Bazoum|Zinder|Agadez|Tillaberi|Diffa|Niger junta'
+    remove: Niger
+    add: Nigeria
+  # AllAfrica files these as "Nigeria: ... in Niger".
+  - if: '^Nigeria:'
+    unless: *niger_country
+    remove: Niger

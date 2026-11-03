@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Security Watch — news collector.
+Atlas Security Watch — news collector.
 
 Runs on GitHub Actions every ~20 minutes:
   1. pulls RSS/Atom feeds, Google News searches and GDELT searches
@@ -225,6 +225,8 @@ class Tagger:
         self.mag_high = float(sev.get("magnitude_high", 6.5))
         self.mag_elev = float(sev.get("magnitude_elevated", 5.8))
         self.noise = re.compile(cfg["noise"], re.I) if cfg.get("noise") else None
+        soft = cfg.get("noise_if_unclassified")
+        self.soft_noise = re.compile(soft, re.I) if soft else None
         self.meta = [{"id": did, "label": d["label"], "color": d.get("color", "#888")}
                      for did, d in cfg["domains"].items()]
         fb = cfg.get("fallback", {})
@@ -585,6 +587,77 @@ class Builder:
             self.items[item["id"]] = item
 
 
+class Refiner:
+    """Final pass over every story, including those kept from earlier runs,
+    so a change to the config files applies straight away."""
+
+    def __init__(self, gaz: Gazetteer, tagger: Tagger, cfg: dict):
+        self.gaz, self.tagger = gaz, tagger
+        self.pins = {str(s["id"]): s["place"] for s in cfg.get("stories") or []}
+        self.rules = []
+        for r in cfg.get("rules") or []:
+            self.rules.append({
+                "if": re.compile(r["if"], re.I) if r.get("if") else None,
+                "source": re.compile(r["source"], re.I) if r.get("source") else None,
+                "unless": re.compile(r["unless"], re.I) if r.get("unless") else None,
+                "remove": r["remove"], "add": r.get("add"),
+            })
+
+    def move(self, it: dict, remove: str, add=None):
+        c = [x for x in it["c"] if x != remove]
+        if add and add not in c:
+            c.insert(0, add)
+        old_region = self.gaz.country_region.get(remove)
+        if not any(self.gaz.country_region.get(x) == old_region for x in c):
+            it["g"] = [g for g in it["g"] if g != old_region]
+        kept = {self.gaz.region_continent.get(g) for g in it["g"]} | \
+               {self.gaz.region_continent.get(self.gaz.country_region.get(x)) for x in c}
+        old_cont = self.gaz.region_continent.get(old_region)
+        k = [x for x in it["k"] if x != old_cont or x in kept]
+        it["c"], it["g"], it["k"] = (list(v) for v in self.gaz.expand(c, it["g"], k))
+
+    def places(self, it: dict):
+        text = norm(" ".join([it.get("t", ""), it.get("x", ""), it.get("ot", "")]))
+        origin = norm(f"{it.get('s', '')} {it.get('u', '')}")
+        for r in self.rules:
+            if r["remove"] not in it["c"]:
+                continue
+            if (r["if"] and not r["if"].search(text)) or (r["source"] and not r["source"].search(origin)):
+                continue
+            if r["unless"] and r["unless"].search(text):
+                continue
+            self.move(it, r["remove"], r["add"])
+        place = self.pins.get(it.get("id"))
+        if place:
+            res = self.gaz.resolve(place)
+            if not res:
+                log(f"  ! corrections: unknown place '{place}' for story {it['id']}")
+                return
+            kind, name = res
+            it["c"], it["g"], it["k"] = (list(v) for v in self.gaz.expand(
+                [name] if kind == "country" else [],
+                [name] if kind == "region" else [],
+                [name] if kind == "continent" else []))
+
+    def refine(self, it: dict) -> bool:
+        """Returns False if the story should be dropped."""
+        self.places(it)
+        title = it.get("t", "")
+        orig = it.get("ot", "")
+        it["sev"] = max(it.get("sev", 0), self.tagger.severity(title))
+        unclassified = not it["d"] or it["d"] == [self.tagger.fallback]
+        if unclassified:
+            found = self.tagger.tag(title, f"{it.get('x', '')} {orig}")
+            if found:
+                it["d"] = found[:4]
+                return True
+            text = norm(f"{title} \n {orig}")
+            for rx in (self.tagger.noise, self.tagger.soft_noise):
+                if rx and rx.search(text):
+                    return False
+        return True
+
+
 def merge_items(cur: dict, item: dict) -> dict:
     """Fold a second report of the same story into the first."""
     known = {cur["s"]} | {o["s"] for o in cur.get("o", [])}
@@ -881,6 +954,12 @@ def main():
     for it in builder.items.values():
         old = merged.get(it["id"])
         merged[it["id"]] = merge_items(old, it) if old else it
+    corrections_file = CONFIG / "corrections.yaml"
+    corrections = yaml.safe_load(corrections_file.read_text(encoding="utf-8")) if corrections_file.exists() else {}
+    refiner = Refiner(gaz, tagger, corrections or {})
+    before = len(merged)
+    merged = {k: it for k, it in merged.items() if refiner.refine(it)}
+    log(f"Refined stories: {before - len(merged)} unclassified non-security stories dropped")
     ranked = sorted(merged.values(), key=lambda i: i["p"], reverse=True)
     items = ranked[:max_items]
     # The size cap drops the oldest stories first; make sure quiet countries
@@ -916,12 +995,14 @@ def main():
             if f.is_file():
                 shutil.copy2(f, out / f.name)
     payload = {
-        "title": settings.get("title", "Security Watch"),
+        "title": settings.get("title", "Atlas Security Watch"),
         "generated": iso(NOW),
         "window_hours": window_h,
         "run_seconds": round(time.time() - t_start, 1),
         "new_this_run": sum(1 for i in items if i.get("f") == iso(NOW)),
         "taxonomy": gaz.taxonomy,
+        "repo": settings.get("repo", ""),
+        "focus_regions": settings.get("focus_regions", []),
         "domains": tagger.meta,
         "links": sources.get("links", []),
         "sources": status,

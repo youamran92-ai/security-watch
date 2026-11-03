@@ -13,7 +13,9 @@ settings:
   window_hours: 48          # how far back the dashboard keeps reports
   max_items: 7000           # cap to keep the page fast (oldest dropped first)
   min_per_country: 15       # …but every country always keeps at least this many
-  title: Security Watch     # shown at the top of the page
+  title: Atlas Security Watch   # shown at the top of the page
+  repo: youamran92-ai/security-watch   # used by the "Wrong place?" link on each story
+  focus_regions: [West Africa]         # always get places in Top stories
 
 # ── 1. RSS / ATOM FEEDS ──────────────────────────────────────────────────────
 #  name:          label shown on the dashboard
@@ -59,6 +61,42 @@ feeds:
   - {name: MercoPress,           url: "https://en.mercopress.com/rss",                             hint: South America}
   - {name: RNZ Pacific,          url: "https://www.rnz.co.nz/rss/pacific.xml",                     hint: Pacific Islands}
   - {name: Guardian Australia,   url: "https://www.theguardian.com/australia-news/rss",            hint: Australia}
+
+  # West Africa — Nigeria
+  - {name: Punch (NG), url: "https://punchng.com/feed/", hint: Nigeria}
+  - {name: Vanguard (NG), url: "https://www.vanguardngr.com/feed/", hint: Nigeria}
+  - {name: Daily Trust (NG), url: "https://dailytrust.com/feed/", hint: Nigeria}
+  - {name: Channels TV (NG), url: "https://www.channelstv.com/feed/", hint: Nigeria}
+  - {name: Daily Post (NG), url: "https://dailypost.ng/feed/", hint: Nigeria}
+  - {name: Leadership (NG), url: "https://leadership.ng/feed/", hint: Nigeria}
+
+  # West Africa — other English-language outlets
+  - {name: MyJoyOnline (GH), url: "https://www.myjoyonline.com/feed/", hint: Ghana}
+  - {name: Foroyaa (GM), url: "https://foroyaa.net/feed/", hint: Gambia}
+  - {name: Sierraloaded (SL), url: "https://sierraloaded.sl/feed/", hint: Sierra Leone}
+  - {name: Sierra Leone Telegraph, url: "https://www.thesierraleonetelegraph.com/feed/", hint: Sierra Leone}
+  - {name: FrontPage Africa (LR), url: "https://frontpageafricaonline.com/feed/", hint: Liberia}
+  - {name: New Dawn (LR), url: "https://thenewdawnliberia.com/feed/", hint: Liberia}
+
+  # West Africa — French and Portuguese outlets
+  - {name: Dakaractu (SN), url: "https://www.dakaractu.com/xml/syndication.rss", hint: Senegal, lang: fr}
+  - {name: PressAfrik (SN), url: "https://www.pressafrik.com/xml/syndication.rss", hint: Senegal, lang: fr}
+  - {name: Bamada (ML), url: "https://bamada.net/feed", hint: Mali, lang: fr}
+  - {name: Malijet (ML), url: "https://malijet.com/feed", hint: Mali, lang: fr}
+  - {name: Studio Tamani (ML), url: "https://www.studiotamani.org/feed/", hint: Mali, lang: fr}
+  - {name: Burkina24 (BF), url: "https://burkina24.com/feed/", hint: Burkina Faso, lang: fr}
+  - {name: Sidwaya (BF), url: "https://www.sidwaya.info/feed/", hint: Burkina Faso, lang: fr}
+  - {name: Le Sahel (NE), url: "https://www.lesahel.org/feed/", hint: Niger, lang: fr}
+  - {name: Air Info Agadez (NE), url: "https://airinfoagadez.com/feed/", hint: Niger, lang: fr}
+  - {name: AIP (CI), url: "https://aip.ci/feed/", hint: "Côte d'Ivoire", lang: fr}
+  - {name: La Nouvelle Tribune (BJ), url: "https://lanouvelletribune.info/feed/", hint: Benin, lang: fr}
+  - {name: Bénin Web TV, url: "https://beninwebtv.com/feed/", hint: Benin, lang: fr}
+  - {name: Icilome (TG), url: "https://www.icilome.com/feed/", hint: Togo, lang: fr}
+  - {name: Guineenews (GN), url: "https://guineenews.org/feed/", hint: Guinea, lang: fr}
+  - {name: Africaguinee (GN), url: "https://www.africaguinee.com/feed/", hint: Guinea, lang: fr}
+  - {name: Guineematin (GN), url: "https://guineematin.com/feed/", hint: Guinea, lang: fr}
+  - {name: Le Calame (MR), url: "https://lecalame.info/rss.xml", hint: Mauritania, lang: fr}
+  - {name: Expresso das Ilhas (CV), url: "https://expressodasilhas.cv/rss", hint: Cabo Verde, lang: pt}
 
   # Specialist security outlets (every item kept)
   - {name: Crisis Group,         url: "https://www.crisisgroup.org/rss.xml",          specialist: true, domain: political}

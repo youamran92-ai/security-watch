@@ -1,4 +1,4 @@
-# Security Watch
+# Atlas Security Watch (ASW)
 
 A free, self-updating dashboard of national-security news from every continent, region and country.
 Headlines are sorted by **place** (continent → region → country) and by **domain**: armed conflict, terrorism, political stability, cyber, diplomacy and sanctions, economic and energy security, maritime, nuclear/WMD, organised crime, health and humanitarian, disasters, borders and migration, and space and emerging tech.
@@ -60,7 +60,7 @@ Bookmark it, or set it as your browser's start page. It updates itself from now 
 | Part | What it does |
 |---|---|
 | **Places** (left) | Every continent, region and country with report counts. A red dot means high-priority reports. Click to filter. Hover a country and click ☆ to add it to your watchlist. "Show quiet" also lists countries with nothing right now. |
-| **Briefing** | Totals, a **Pulse** grid (continent × domain; click any cell), **Hotspots** (the busiest countries) and **Top stories** (the most severe and most widely reported). |
+| **Briefing** | Totals, a **Pulse** grid (continent × domain; click any cell), **Hotspots** (the busiest countries) and **Top stories** (the most severe and most widely reported, spread across regions, with places kept for `focus_regions` in `config/sources.yaml`). |
 | **Feed** | All reports, newest first. Filter by topic, time window (1h–48h), "High priority only", or search words. "+N outlets" shows other publishers covering the same story. |
 | **Watchlist** | Only the countries and regions you starred. It's saved in your browser. |
 | **Links** | Your start page: live maps, trackers, institutions and think tanks. |
@@ -81,6 +81,7 @@ Edit files directly on github.com: open a file, click the ✏️ pencil, change 
 | `config/sources.yaml` | Add or remove RSS feeds, Google News searches, GDELT searches and Links-tab entries. It also holds the time window (`window_hours`). |
 | `config/domains.yaml` | Keywords for each domain, severity words, and the noise filter that drops sport and entertainment. |
 | `config/places.yaml` | Countries, regions, and the words that point to them: cities, demonyms, armed groups. |
+| `config/corrections.yaml` | Fix a wrongly tagged place. Click **Wrong place?** on a story to get a ready-made line to paste here. Rules for repeating mistakes, such as Niger State being tagged as Niger, also live here. |
 
 **Adding a source:** copy one line under `feeds:` and change the name and URL. Use `specialist: true` for outlets that only cover security, and set a `hint:` (a place name from `places.yaml`) if the outlet covers one country or region.
 

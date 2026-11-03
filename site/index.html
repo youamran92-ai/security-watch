@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Security Watch</title>
+<title>Atlas Security Watch</title>
 <meta name="description" content="Global national-security news, sorted by place and domain, refreshed every 20 minutes.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%23f2a541' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%23f2a541' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23f2a541'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.24.0/maplibre-gl.css">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -206,9 +206,14 @@ table.matrix{border-collapse:separate;border-spacing:3px;width:100%;min-width:76
 .map-legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:12px;color:var(--muted);margin:10px 2px 0}
 .map-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
 .map-legend i.ring{background:transparent!important;border:2px dashed var(--muted)}
-.leaflet-container{font:13px/1.4 var(--sans)}
-.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel);color:var(--text);box-shadow:0 8px 30px rgba(0,0,0,.3)}
-.leaflet-popup-content{margin:12px 14px;width:290px!important}
+.maplibregl-map{font:13px/1.4 var(--sans)}
+.maplibregl-popup-content{background:var(--panel);color:var(--text);box-shadow:0 8px 30px rgba(0,0,0,.3);padding:12px 14px;border-radius:10px;width:290px;max-width:100%;box-sizing:border-box}
+.maplibregl-popup-close-button{color:var(--muted);font-size:18px;padding:0 6px}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip{border-top-color:var(--panel)}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,.maplibregl-popup-anchor-top-right .maplibregl-popup-tip{border-bottom-color:var(--panel)}
+.maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:var(--panel)}
+.maplibregl-popup-anchor-right .maplibregl-popup-tip{border-left-color:var(--panel)}
+.map-dot{display:flex;align-items:center;justify-content:center;box-sizing:border-box;border-radius:50%;padding:0;cursor:pointer;color:#fff;font:600 11px var(--mono);text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .pop h4{margin:0 0 2px;font-size:14px}
 .pop .pm{font-size:12px;color:var(--muted);margin-bottom:8px}
 .pop ul{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:7px;max-height:220px;overflow:auto}
@@ -220,9 +225,13 @@ table.matrix{border-collapse:separate;border-spacing:3px;width:100%;min-width:76
 .pop li small{display:block;color:var(--faint);font-size:11.5px}
 .pop button{width:100%;padding:7px;border-radius:7px;background:var(--accent-soft);color:var(--accent);font-weight:600}
 .pop button:hover{background:var(--accent);color:var(--panel)}
-.leaflet-tooltip.cnt{background:none;border:0;box-shadow:none;color:#fff;font:600 11px var(--mono);text-shadow:0 1px 2px rgba(0,0,0,.6);padding:0}
-.leaflet-tooltip.cnt::before{display:none}
-.leaflet-control-attribution{font-size:10px}
+.fix-place{font:11.5px var(--mono);color:var(--faint)}
+.fix-place:hover{color:var(--accent);text-decoration:underline}
+.fix-box{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;padding:8px 10px;background:var(--panel-2);border-radius:7px;font-size:12.5px;color:var(--muted)}
+.fix-box select{max-width:100%;font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+.fix-box button{font-weight:600;color:var(--accent)}
+.fix-box button:hover{text-decoration:underline}
+.fix-box code{font:11.5px var(--mono);overflow-wrap:anywhere}
 
 /* ── links ──────────────────────────────────────────── */
 .links{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
@@ -282,7 +291,7 @@ footer a{color:var(--muted)}
   </button>
   <div class="brand">
     <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="var(--accent)" stroke-width="2.5"/><circle cx="16" cy="16" r="7" fill="none" stroke="var(--accent)" stroke-width="2.5" opacity=".6"/><circle cx="16" cy="16" r="2.5" fill="var(--accent)"/></svg>
-    <span id="brandName">Security Watch</span>
+    <span id="brandName">Atlas Security Watch</span>
     <small>global</small>
   </div>
   <div class="status" id="status"><span class="pulse-dot" id="dot"></span><span id="statusText">Loading…</span></div>
@@ -414,8 +423,8 @@ function ingest(d){
     it.lc = (it.t + ' ' + (it.ot || '') + ' ' + it.s + ' ' + (it.x || '') + ' ' + (it.c || []).join(' ')).toLowerCase();
     return it;
   });
-  document.title = d.title || 'Security Watch';
-  $('#brandName').textContent = d.title || 'Security Watch';
+  document.title = d.title || 'Atlas Security Watch';
+  $('#brandName').textContent = d.title || 'Atlas Security Watch';
 }
 async function init(){
   readHash();
@@ -612,6 +621,7 @@ function card(it){
       ${doms.map(d => `<button class="tag" data-dom="${esc(d.id)}"><i style="background:${d.color}"></i>${esc(d.label)}</button>`).join('')}
       ${it.l ? (it.ot ? `<button class="lang" data-ot="${esc(it.id)}" title="Translated from ${esc(LANG_NAMES[it.l] || it.l)} — click to see the original">${esc(it.l.split('-')[0])} → en</button>`
                       : `<span class="lang raw" title="${esc(LANG_NAMES[it.l] || it.l)} — not translated yet">${esc(it.l.split('-')[0])}</span>`) : ''}
+      <button class="fix-place" data-fix="${esc(it.id)}">Wrong place?</button>
       <span class="via">${{gnews: 'via Google News', bing: 'via Bing News', gdelt: 'via GDELT', gdeltfile: 'via GDELT events'}[it.v] || ''}</span>
     </div>
     ${it.ot ? `<p class="ot" id="ot-${esc(it.id)}" dir="auto"><b>ORIGINAL</b>${esc(it.ot)}</p>` : ''}
@@ -620,6 +630,10 @@ function card(it){
   </article>`;
 }
 document.addEventListener('click', e => {
+  const fix = e.target.closest('[data-fix]');
+  if (fix) { toggleFixBox(fix); return; }
+  const copy = e.target.closest('[data-fix-copy]');
+  if (copy) { copyFix(copy); return; }
   const ot = e.target.closest('[data-ot]');
   if (ot) { const el = document.getElementById('ot-' + ot.dataset.ot); if (el) el.classList.toggle('open'); return; }
   const m = e.target.closest('[data-more]');
@@ -629,6 +643,52 @@ document.addEventListener('click', e => {
   const d = e.target.closest('.card [data-dom]');
   if (d) { S.doms = new Set([d.dataset.dom]); S.view = 'feed'; S.limit = 150; render(); window.scrollTo({top: 0}); }
 });
+function fixLine(box){ return `- {id: ${box.dataset.id}, place: ${JSON.stringify(box.querySelector('select').value)}}`; }
+function toggleFixBox(btn){
+  const card = btn.closest('.card'), open = card.querySelector('.fix-box');
+  if (open) { open.remove(); return; }
+  const it = S.items.find(i => i.id === btn.dataset.fix);
+  const cur = it?.c?.[0] === 'Niger' ? 'Nigeria' : (it?.c?.[0] || '');
+  const box = document.createElement('div');
+  box.className = 'fix-box'; box.dataset.id = btn.dataset.fix;
+  box.innerHTML = `<label>Correct place <select>${Object.keys(S.ctyReg).sort().map(c => `<option${c === cur ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+    <button data-fix-copy>Copy fix and open the corrections file</button><code></code>`;
+  const show = () => { box.querySelector('code').textContent = fixLine(box); };
+  box.querySelector('select').addEventListener('change', show); show();
+  card.appendChild(box);
+}
+function copyFix(btn){
+  const box = btn.closest('.fix-box'), line = fixLine(box);
+  navigator.clipboard?.writeText(line).catch(() => {});
+  if (S.data.repo) window.open(`https://github.com/${S.data.repo}/edit/main/config/corrections.yaml`, '_blank', 'noopener');
+  btn.textContent = 'Copied. Paste it under "stories:" (replace [] if it is empty)';
+}
+// Top stories: the most severe and most widely reported, spread across regions,
+// with places kept for the regions in settings.focus_regions.
+function topStories(base){
+  const TOTAL = 10, PER_REGION = 2, PER_FOCUS = 3;
+  const focus = S.data.focus_regions || [];
+  const region = i => S.ctyReg[(i.c || [])[0]] || (i.g || [])[0] || 'Global';
+  const order = (a, b) => (b.sev - a.sev) || (b.n - a.n) || (b.ts - a.ts);
+  const words = t => new Set((t.toLowerCase().match(/[a-z0-9]{3,}/g) || []));
+  // Same story: most words shared, or a few words shared about the same lead country.
+  const same = (a, b) => {
+    let n = 0; for (const w of a.w) if (b.w.has(w)) n++;
+    return (n >= 4 && n / Math.min(a.w.size, b.w.size) >= 0.7) || (n >= 3 && a.place && a.place === b.place);
+  };
+  const cand = base.filter(i => (i.sev === 2 || i.n >= 3) && i.d.some(d => d !== 'other')).sort(order);
+  const picks = [], seen = [], perRegion = {};
+  const take = (i, cap) => {
+    const r = region(i);
+    if ((perRegion[r] || 0) >= cap) return;
+    const w = {w: words(i.t), place: (i.c || [])[0]};
+    if (seen.some(x => same(x, w))) return;
+    seen.push(w); picks.push(i); perRegion[r] = (perRegion[r] || 0) + 1;
+  };
+  for (const f of focus) for (const i of cand) { if (region(i) === f) take(i, PER_FOCUS); }
+  for (const i of cand) { if (picks.length >= TOTAL) break; if (!picks.includes(i)) take(i, PER_REGION); }
+  return picks.slice(0, TOTAL).sort(order);
+}
 function list(items, emptyMsg){
   if (!items.length) return `<div class="empty"><h3>Nothing here right now</h3><div>${emptyMsg}</div></div>`;
   const shown = items.slice(0, S.limit);
@@ -693,8 +753,7 @@ function renderBrief(){
     return `<button data-g="${esc('country:' + c)}"><span class="rk">${i + 1}</span><span class="nm">${esc(c)}<small>${esc(S.ctyReg[c] || '')} · ${esc(topDom)}</small></span><span class="bar"><span style="width:${Math.max(6, 70 * sc / hmax)}px"></span>${h.n}${h.hi ? ` <em>▲${h.hi}</em>` : ''}</span></button>`;
   }).join('')}</div>` : `<div class="mini">No country-level reports in this window yet.</div>`;
   // top stories
-  const top = base.filter(i => i.sev === 2 || i.n >= 3)
-    .sort((a, b) => (b.sev - a.sev) || (b.n - a.n) || (b.ts - a.ts)).slice(0, 8);
+  const top = topStories(base);
   $('#view').innerHTML = `
     <div class="kpis">
       <div class="kpi"><div class="l">Reports · ${S.win}h</div><div class="v">${fmtN(base.length)}</div><div class="s">${S.data.new_this_run ? fmtN(S.data.new_this_run) + ' new in last run' : 'deduplicated stories'}</div></div>
@@ -708,7 +767,7 @@ function renderBrief(){
     </div>
     <div class="grid2">
       <div class="panel"><div class="panel-h"><h2>Hotspots</h2><span>reports · ▲ high priority</span></div><div class="panel-b">${hotHtml}</div></div>
-      <div class="panel"><div class="panel-h"><h2>Top stories</h2><span>most severe and most widely reported</span></div><div class="panel-b top-list">${top.length ? `<div class="list">${top.map(card).join('')}</div>` : '<div class="mini">No major stories in this window.</div>'}</div></div>
+      <div class="panel"><div class="panel-h"><h2>Top stories</h2><span>most severe and most widely reported, across regions</span></div><div class="panel-b top-list">${top.length ? `<div class="list">${top.map(card).join('')}</div>` : '<div class="mini">No major stories in this window.</div>'}</div></div>
     </div>`;
 }
 
@@ -765,27 +824,24 @@ const REGION_COORDS = {
 'Western Europe':[49,4],'Northern Europe':[59,18],'Southern Europe':[40,14],'Central Europe & Balkans':[46,21],'Eastern Europe & Caucasus':[50,40],
 'Australia & New Zealand':[-32,148],'Pacific Islands':[-12,172],'Arctic':[78,25],'Antarctica':[-75,0],
 };
-let leafletP = null, MAP = null, mapLayer = null, tiles = null, mapDark = null;
-function loadLeaflet(){
-  if (window.L) return Promise.resolve();
-  if (!leafletP) leafletP = new Promise((ok, bad) => {
+let mapLibP = null, MAP = null, mapMarkers = [], mapPopup = null, mapDark = null;
+const MAP_STYLES = {light: 'https://tiles.openfreemap.org/styles/positron', dark: 'https://tiles.openfreemap.org/styles/dark'};
+function loadMapLibre(){
+  if (window.maplibregl) return Promise.resolve();
+  if (!mapLibP) mapLibP = new Promise((ok, bad) => {
     const sc = document.createElement('script');
-    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
-    sc.onload = ok; sc.onerror = () => { leafletP = null; bad(new Error('map library')); };
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.24.0/maplibre-gl.js';
+    sc.onload = ok; sc.onerror = () => { mapLibP = null; bad(new Error('map library')); };
     document.head.appendChild(sc);
   });
-  return leafletP;
+  return mapLibP;
 }
 function isDark(){ return theme === 'dark' || (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches); }
-function setTiles(){
+function setMapStyle(){
   const dark = isDark();
-  if (tiles && mapDark === dark) return;
-  if (tiles) MAP.removeLayer(tiles);
+  if (mapDark === dark) return;
   mapDark = dark;
-  tiles = L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`, {
-    subdomains: 'abcd', maxZoom: 10, minZoom: 1,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  }).addTo(MAP);
+  MAP.setStyle(dark ? MAP_STYLES.dark : MAP_STYLES.light);
 }
 function renderMap(){
   const items = S.items.filter(i => passes(i, {geo: false}));
@@ -815,16 +871,26 @@ function renderMap(){
         <span>· circle size = number of reports</span>
         <span id="mapNote"></span>
       </div>`;
-    MAP = null; tiles = null; mapDark = null;
+    if (MAP) MAP.remove();   // frees the old map's WebGL context
+    MAP = null; mapMarkers = []; mapPopup = null; mapDark = null;
   }
   $('#mapNote').textContent = `· ${fmtN(placedN)} reports on the map` + (offMap ? `, ${fmtN(offMap)} without a location` : '');
-  loadLeaflet().then(() => {
+  loadMapLibre().then(() => {
+    if (!$('#map')) return;      // the reader left the Map tab while it was loading
     if (!MAP) {
-      MAP = L.map('map', {worldCopyJump: true, zoomControl: true, minZoom: 1, attributionControl: true}).setView([20, 15], innerWidth < 600 ? 1 : 2);
-      mapLayer = L.layerGroup().addTo(MAP);
+      mapDark = isDark();
+      MAP = new maplibregl.Map({
+        container: 'map', style: mapDark ? MAP_STYLES.dark : MAP_STYLES.light,
+        center: [15, 20], zoom: innerWidth < 600 ? 0 : 1, minZoom: 0, maxZoom: 9,
+        dragRotate: false, pitchWithRotate: false, touchPitch: false,
+      });
+      MAP.addControl(new maplibregl.NavigationControl({showCompass: false}), 'top-left');
+      MAP.touchZoomRotate.disableRotation();
     }
-    setTiles();
-    mapLayer.clearLayers();
+    setMapStyle();
+    mapMarkers.forEach(m => m.remove());
+    mapMarkers = [];
+    if (mapPopup) { mapPopup.remove(); mapPopup = null; }
     const max = Math.max(1, ...[...groups.values()].map(g => g.items.length));
     const css = getComputedStyle(document.documentElement);
     const col = {hi: css.getPropertyValue('--high').trim(), el: css.getPropertyValue('--elev').trim(), base: css.getPropertyValue('--accent').trim()};
@@ -834,30 +900,41 @@ function renderMap(){
       // red = a large share of severe reports; amber = some; neutral = routine coverage
       const color = (g.hi >= 5 || g.hi / n >= 0.25) ? col.hi : (g.hi || (g.el / n) >= 0.4) ? col.el : col.base;
       const r = (innerWidth < 600 ? 4 : 5) + (innerWidth < 600 ? 14 : 24) * Math.sqrt(n / max);
-      const m = L.circleMarker(g.ll, {
-        radius: r, color, weight: g.type === 'region' ? 2 : 1.5, dashArray: g.type === 'region' ? '4 4' : null,
-        fillColor: color, fillOpacity: g.type === 'region' ? 0.08 : 0.38, opacity: 0.95,
-      }).addTo(mapLayer);
-      if (r >= 11) m.bindTooltip(String(n), {permanent: true, direction: 'center', className: 'cnt'});
-      const top = g.items.slice().sort((a, b) => (b.sev - a.sev) || (b.ts - a.ts)).slice(0, 6);
-      m.bindPopup(() => `<div class="pop"><h4>${esc(g.name)}</h4>
-        <div class="pm">${n} report${n > 1 ? 's' : ''} in ${S.win}h${g.hi ? ` · <span style="color:var(--high)">${g.hi} high priority</span>` : ''}${g.type === 'region' ? ' · region-wide' : ''}</div>
-        <ul>${top.map(it => `<li class="s${it.sev}"><a href="${esc(it.u)}" target="_blank" rel="noopener noreferrer">${esc(it.t)}</a><small>${esc(it.s)} · ${ago(it.ts)}</small></li>`).join('')}</ul>
-        <button data-mapgo="${esc(g.type + ':' + g.name)}">Open all ${n} in Feed →</button></div>`, {maxWidth: 320});
+      const el = document.createElement('button');
+      el.className = 'map-dot';
+      el.setAttribute('aria-label', `${g.name}: ${n} report${n > 1 ? 's' : ''}`);
+      el.style.width = el.style.height = (2 * r) + 'px';
+      el.style.border = `${g.type === 'region' ? '2px dashed' : '1.5px solid'} ${color}`;
+      el.style.background = `color-mix(in srgb, ${color} ${g.type === 'region' ? 8 : 38}%, transparent)`;
+      if (r >= 11) el.textContent = n;
+      const lngLat = [g.ll[1], g.ll[0]];      // COORDS are [lat, lng]; MapLibre wants [lng, lat]
+      el.addEventListener('click', ev => {
+        ev.stopPropagation();
+        const top = g.items.slice().sort((a, b) => (b.sev - a.sev) || (b.ts - a.ts)).slice(0, 6);
+        if (mapPopup) mapPopup.remove();
+        mapPopup = new maplibregl.Popup({maxWidth: '320px', offset: r, anchor: 'bottom'}).setLngLat(lngLat).setHTML(`<div class="pop"><h4>${esc(g.name)}</h4>
+          <div class="pm">${n} report${n > 1 ? 's' : ''} in ${S.win}h${g.hi ? ` · <span style="color:var(--high)">${g.hi} high priority</span>` : ''}${g.type === 'region' ? ' · region-wide' : ''}</div>
+          <ul>${top.map(it => `<li class="s${it.sev}"><a href="${esc(it.u)}" target="_blank" rel="noopener noreferrer">${esc(it.t)}</a><small>${esc(it.s)} · ${ago(it.ts)}</small></li>`).join('')}</ul>
+          <button data-mapgo="${esc(g.type + ':' + g.name)}">Open all ${n} in Feed →</button></div>`).addTo(MAP);
+        // MapLibre doesn't pan to fit a popup: move the dot down so the whole popup shows
+        MAP.easeTo({center: lngLat, offset: [0, Math.max(0, MAP.getContainer().clientHeight / 2 - r - 20)], duration: 300});
+      });
+      mapMarkers.push(new maplibregl.Marker({element: el}).setLngLat(lngLat).addTo(MAP));
     }
     // zoom to a selected place from the Places list
-    if (S.geo && S.geo.type === 'country' && COORDS[S.geo.name]) MAP.setView(COORDS[S.geo.name], 5);
-    else if (S.geo && S.geo.type === 'region' && REGION_COORDS[S.geo.name]) MAP.setView(REGION_COORDS[S.geo.name], 4);
-    setTimeout(() => MAP.invalidateSize(), 50);
+    const jump = (ll, zoom) => MAP.jumpTo({center: [ll[1], ll[0]], zoom});
+    if (S.geo && S.geo.type === 'country' && COORDS[S.geo.name]) jump(COORDS[S.geo.name], 4);
+    else if (S.geo && S.geo.type === 'region' && REGION_COORDS[S.geo.name]) jump(REGION_COORDS[S.geo.name], 3);
+    setTimeout(() => { if (MAP) MAP.resize(); }, 50);
   }).catch(() => {
     $('#map').innerHTML = '<div class="empty" style="margin:20px"><h3>The map couldn\'t load</h3><div>Check your internet connection and refresh.</div></div>';
   });
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-mapgo]');
-  if (b) { if (MAP) MAP.closePopup(); setGeo(b.dataset.mapgo, 'feed'); }
+  if (b) { if (mapPopup) mapPopup.remove(); setGeo(b.dataset.mapgo, 'feed'); }
 });
-matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (MAP) setTiles(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (MAP) setMapStyle(); });
 
 function renderLinks(){
   const groups = S.data.links || [];

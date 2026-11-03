@@ -56,7 +56,7 @@ domains:
   crime:
     label: Organised crime & trafficking
     color: "#a1663f"
-    keywords: [cartel*, drug traffick*, trafficking, trafficker*, smuggl*, cocaine, fentanyl, heroin, methamphetamine, captagon, money laundering, organized crime, organised crime, gang, gangs, gang violence, mafia, human trafficking, arms trafficking, illegal mining, poaching, wildlife trafficking, extortion, corruption, bribery, narco*, drug seizure*, drug lord*, kingpin*, sanctions evasion]
+    keywords: [cartel*, drug traffick*, trafficking, trafficker*, smuggl*, cocaine, fentanyl, heroin, methamphetamine, captagon, money laundering, organized crime, organised crime, gang, gangs, gang violence, mafia, human trafficking, arms trafficking, illegal mining, orpaillage, poaching, wildlife trafficking, extortion, corruption, bribery, narco*, drug seizure*, drug lord*, kingpin*, sanctions evasion, arrest*, detain*, ransom*, stabb*, burglar*, armed robber*, murder*, killed, slain, shot dead, gunman, police raid*, prison*, jail*]
 
   health:
     label: Health & humanitarian
@@ -88,8 +88,8 @@ fallback:
 #  SEVERITY — the red / amber markers. Matched against the headline only.
 # ─────────────────────────────────────────────────────────────────────────────
 severity:
-  high: [kill, killed, kills, killing, dead, deaths, death toll, massacre*, coup, coups, putsch, invasion, invades, explosion*, blast*, bomb, bombs, bombing*, bombed, airstrike*, air strike*, missile strike*, missile attack*, assassinat*, hostage*, beheaded, state of emergency, martial law, declares war, declared war, nuclear test, mass casualt*, mass shooting*, genocide, tsunami, terror attack*, terrorist attack*, suicide bomb*, mutiny, overthrown, ousted, seized power, shot down, red alert, executed, slaughtered]
-  elevated: [attack*, clash*, protest*, riot*, sanction*, cyberattack*, ransomware, militant*, ambush*, troops, offensive, shelling, kidnap*, abduct*, evacuat*, outbreak*, earthquake*, crackdown, curfew, mobiliz*, mobilis*, threat*, tension*, escalat*, warship*, military drill*, drills, missile*, ICBM*, drone attack*, standoff, incursion*, seized, wounded, injured, orange alert, emergency, breach*]
+  high: [kill, killed, kills, killing, dead, deaths, death toll, massacre*, coup, coups, putsch, invasion, invades, explosion*, blast*, bomb, bombs, bombing*, bombed, airstrike*, air strike*, missile strike*, missile attack*, assassinat*, hostage*, kidnap*, abduct*, beheaded, state of emergency, martial law, declares war, declared war, nuclear test, mass casualt*, mass shooting*, genocide, tsunami, terror attack*, terrorist attack*, suicide bomb*, mutiny, overthrown, ousted, seized power, shot down, red alert, executed, slaughtered]
+  elevated: [attack*, clash*, protest*, riot*, sanction*, cyberattack*, ransomware, militant*, ambush*, troops, offensive, shelling, evacuat*, outbreak*, earthquake*, crackdown, curfew, mobiliz*, mobilis*, threat*, tension*, escalat*, warship*, military drill*, drills, missile*, ICBM*, drone attack*, standoff, incursion*, seized, wounded, injured, orange alert, emergency, breach*]
   # Earthquakes and similar items carrying a magnitude (e.g. "M 6.1 - ..."):
   magnitude_high: 6.5
   magnitude_elevated: 5.8
@@ -99,3 +99,7 @@ severity:
 #  (sport, entertainment, lifestyle). Specialist feeds are not affected.
 # ─────────────────────────────────────────────────────────────────────────────
 noise: "\\b(football|soccer|Premier League|Champions League|La Liga|Serie A|Bundesliga|World Cup qualif|NBA|NFL|MLB|NHL|cricket|rugby|tennis|Wimbledon|golf|Formula 1|F1|Grand Prix|Olympic|Oscars?|Grammy|Emmy|box office|album|celebrity|recipe|horoscope|fashion week|red carpet|transfer window|match report|quiz|crossword|Eurovision)\\b"
+
+# Dropped only if a story from a broad search also matches no topic above.
+# Unlike "noise", a real security story that mentions these words is kept.
+noise_if_unclassified: "\\b(Olympics|JOJ|volleyball|volleyers|basketball|boxing|boxer|sambo|Manchester United|Lamine Yamal|selection|lottery|Loto|TV Journal|Journal TV|JT de|how old|quel age|film|festival|fiesta|dance|danser)\\b"
