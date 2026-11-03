@@ -60,7 +60,7 @@ Bookmark it, or set it as your browser's start page. It updates itself from now 
 | Part | What it does |
 |---|---|
 | **Places** (left) | Every continent, region and country with report counts. A red dot means high-priority reports. Click to filter. Hover a country and click ☆ to add it to your watchlist. "Show quiet" also lists countries with nothing right now. |
-| **Briefing** | Totals, a **Pulse** grid (continent × domain; click any cell), **Hotspots** (the busiest countries) and **Top stories** (the most severe and most widely reported, spread across regions, with places kept for `focus_regions` in `config/sources.yaml`). |
+| **Briefing** | Totals, a **Pulse** grid (continent × domain; click any cell), **Hotspots** (the busiest countries) and **Live Intelligence Feed** (the most severe and most widely reported, spread across regions, with places kept for `focus_regions` in `config/sources.yaml`). |
 | **Feed** | All reports, newest first. Filter by topic, time window (1h–48h), "High priority only", or search words. "+N outlets" shows other publishers covering the same story. |
 | **Watchlist** | Only the countries and regions you starred. It's saved in your browser. |
 | **Links** | Your start page: live maps, trackers, institutions and think tanks. |

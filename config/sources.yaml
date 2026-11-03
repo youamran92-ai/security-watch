@@ -15,7 +15,7 @@ settings:
   min_per_country: 15       # …but every country always keeps at least this many
   title: Atlas Security Watch   # shown at the top of the page
   repo: youamran92-ai/security-watch   # used by the "Wrong place?" link on each story
-  focus_regions: [West Africa]         # always get places in Top stories
+  focus_regions: [West Africa]         # always get places in the Live Intelligence Feed
 
 # ── 1. RSS / ATOM FEEDS ──────────────────────────────────────────────────────
 #  name:          label shown on the dashboard
