@@ -1,0 +1,290 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  PLACES — how headlines get sorted by geography
+#
+#  Structure:  Continent → Region → Country: [other words that point to it]
+#
+#  • The country's own name is always matched; list extra words after it
+#    (demonyms, capitals, cities, provinces, armed groups based there).
+#  • "_terms" are words that point to a whole region or continent
+#    (e.g. "Sahel" → West Africa) without naming a specific country.
+#  • ALL-CAPS short words (US, DRC, IDF) are matched case-sensitively.
+#  • Longer phrases win over shorter ones, so "South Sudan" never counts
+#    as "Sudan", and "Lake Chad" never counts as "Chad".
+#  • A country can use {aliases: [...], exclude: "regex"} to skip headlines
+#    that contain a confusing phrase (see Georgia).
+#  • Cities that mostly appear as meeting venues (Geneva, Brussels, Vienna,
+#    The Hague, Doha) are deliberately left out, so "talks in Geneva" doesn't
+#    make Switzerland look like a hotspot.
+# ─────────────────────────────────────────────────────────────────────────────
+
+Africa:
+  _terms: [Africa, African, African Union, Sub-Saharan, Sub-Saharan Africa]
+  North Africa:
+    _terms: [North Africa, North African, Maghreb]
+    Algeria: [Algerian, Algiers]
+    Egypt: [Egyptian, Cairo, Sinai, Suez Canal]
+    Libya: [Libyan, Tripoli, Benghazi, Haftar]
+    Morocco: [Moroccan, Rabat, Casablanca]
+    Tunisia: [Tunisian, Tunis]
+    Western Sahara: [Sahrawi, Polisario]
+  West Africa:
+    _terms: [West Africa, West African, Sahel, Sahelian, ECOWAS, Alliance of Sahel States, Gulf of Guinea, Lake Chad, JNIM]
+    Benin: [Beninese, Porto-Novo, Cotonou]
+    Burkina Faso: [Burkinabe, Ouagadougou]
+    Cabo Verde: [Cape Verde, Cape Verdean]
+    "Côte d'Ivoire": [Ivory Coast, Ivorian, Abidjan, Yamoussoukro]
+    Gambia: [Gambian, Banjul]
+    Ghana: [Ghanaian, Accra, Kumasi]
+    Guinea: [Guinean, Conakry]
+    Guinea-Bissau: [Bissau-Guinean, Bissau]
+    Liberia: [Liberian, Monrovia]
+    Mali: [Malian, Bamako, Timbuktu, Kidal, Mopti]
+    Mauritania: [Mauritanian, Nouakchott]
+    Niger: [Nigerien, Niamey]
+    Nigeria: [Nigerian, Abuja, Lagos, Niger Delta, Boko Haram, ISWAP, Borno, Zamfara, Kaduna, Maiduguri, Plateau State, Benue]
+    Senegal: [Senegalese, Dakar]
+    Sierra Leone: [Sierra Leonean, Freetown]
+    Togo: [Togolese, Lome]
+  Central Africa:
+    _terms: [Central Africa, ECCAS]
+    Cameroon: [Cameroonian, Yaounde, Douala, Ambazonia, Ambazonian]
+    Central African Republic: [CAR, Bangui]
+    Chad: [Chadian, "N'Djamena", Ndjamena]
+    Republic of the Congo: [Congo-Brazzaville, Republic of Congo, Brazzaville]
+    DR Congo: [DRC, Democratic Republic of Congo, Democratic Republic of the Congo, Congo, Congolese, Kinshasa, Goma, North Kivu, South Kivu, Ituri, M23, Bukavu]
+    Equatorial Guinea: [Equatoguinean, Malabo]
+    Gabon: [Gabonese, Libreville]
+    Sao Tome and Principe: [Sao Tome]
+  East Africa & Horn:
+    _terms: [East Africa, East African, Horn of Africa, IGAD, Great Lakes region]
+    Burundi: [Burundian, Gitega, Bujumbura]
+    Djibouti: [Djiboutian]
+    Eritrea: [Eritrean, Asmara]
+    Ethiopia: [Ethiopian, Addis Ababa, Tigray, Tigrayan, Amhara, Oromia]
+    Kenya: [Kenyan, Nairobi, Mombasa]
+    Rwanda: [Rwandan, Kigali]
+    Somalia: [Somali, Mogadishu, al-Shabaab, Shabaab, Puntland, Jubaland]
+    Somaliland: [Hargeisa, Berbera]
+    South Sudan: [South Sudanese, Juba]
+    Sudan: [Sudanese, Khartoum, Darfur, El Fasher, Omdurman, Rapid Support Forces, Kordofan, Port Sudan]
+    Tanzania: [Tanzanian, Dodoma, Dar es Salaam, Zanzibar]
+    Uganda: [Ugandan, Kampala]
+  Southern Africa:
+    _terms: [Southern Africa, SADC]
+    Angola: [Angolan, Luanda, Cabinda]
+    Botswana: [Batswana, Gaborone]
+    Comoros: [Comorian, Moroni]
+    Eswatini: [Swaziland, Swazi, Mbabane]
+    Lesotho: [Basotho, Maseru]
+    Madagascar: [Malagasy, Antananarivo]
+    Malawi: [Malawian, Lilongwe]
+    Mauritius: [Mauritian, Port Louis]
+    Mozambique: [Mozambican, Maputo, Cabo Delgado]
+    Namibia: [Namibian, Windhoek]
+    Seychelles: [Seychellois]
+    South Africa: [South African, Pretoria, Johannesburg, Cape Town, Durban]
+    Zambia: [Zambian, Lusaka]
+    Zimbabwe: [Zimbabwean, Harare]
+
+Americas:
+  _terms: [Latin America, Latin American, the Americas, Western Hemisphere, Organization of American States, OAS]
+  North America:
+    _terms: [North America, North American, NORAD, USMCA]
+    United States: [US, U.S., USA, U.S.A., America, American, Washington, White House, Pentagon, State Department, Homeland Security, FBI, CIA, New York, California, Texas, Florida, New Mexico, Alaska, Hawaii]
+    Canada: [Canadian, Ottawa]
+    Mexico: [Mexican, Mexico City, Sinaloa, Jalisco, CJNG, Tijuana, Ciudad Juarez, Culiacan]
+    Greenland: [Greenlandic, Nuuk]
+  Central America & Caribbean:
+    _terms: [Central America, Central American, Caribbean, CARICOM]
+    Antigua and Barbuda: [Antigua]
+    Bahamas: [Bahamian, Nassau]
+    Barbados: [Barbadian, Bridgetown]
+    Belize: [Belizean]
+    Costa Rica: [Costa Rican]
+    Cuba: [Cuban, Havana, Guantanamo]
+    Dominica: []
+    Dominican Republic: [Dominican, Santo Domingo]
+    El Salvador: [Salvadoran, Salvadorean, San Salvador]
+    Grenada: [Grenadian]
+    Guatemala: [Guatemalan, Guatemala City]
+    Haiti: [Haitian, Port-au-Prince, Viv Ansanm]
+    Honduras: [Honduran, Tegucigalpa]
+    Jamaica: [Jamaican]
+    Nicaragua: [Nicaraguan, Managua]
+    Panama: [Panamanian, Panama Canal, Panama City]
+    Puerto Rico: [Puerto Rican]
+    Saint Kitts and Nevis: [St Kitts]
+    Saint Lucia: [St Lucia]
+    Saint Vincent and the Grenadines: [St Vincent]
+    Trinidad and Tobago: [Trinidad, Trinidadian, Port of Spain]
+  South America:
+    _terms: [South America, South American, Mercosur, Andes, Andean, Amazon rainforest]
+    Argentina: [Argentine, Argentinian, Buenos Aires]
+    Bolivia: [Bolivian, La Paz]
+    Brazil: [Brazilian, Brasilia, Sao Paulo, Rio de Janeiro]
+    Chile: [Chilean, Santiago]
+    Colombia: [Colombian, Bogota, FARC, ELN, Clan del Golfo]
+    Ecuador: [Ecuadorian, Ecuadorean, Quito, Guayaquil]
+    Falkland Islands: [Falklands, Malvinas]
+    Guyana: [Guyanese, Georgetown, Essequibo]
+    Paraguay: [Paraguayan, Asuncion]
+    Peru: [Peruvian, Lima]
+    Suriname: [Surinamese, Paramaribo]
+    Uruguay: [Uruguayan, Montevideo]
+    Venezuela: [Venezuelan, Caracas, Tren de Aragua]
+
+Asia:
+  _terms: [Asia, Asian, Asia-Pacific, Indo-Pacific]
+  East Asia:
+    _terms: [East Asia, East Asian, East China Sea, Korean Peninsula, Yellow Sea]
+    China: [Chinese, Beijing, PRC, PLA, Shanghai, Xinjiang, Uyghur, Uighur, Tibet, Tibetan, Hong Kong, Xi Jinping]
+    Taiwan: [Taiwanese, Taipei, Taiwan Strait, Chinese Taipei]
+    Japan: [Japanese, Tokyo, Okinawa, Senkaku]
+    North Korea: [North Korean, Pyongyang, DPRK, Kim Jong Un]
+    South Korea: [South Korean, Seoul, ROK]
+    Mongolia: [Mongolian, Ulaanbaatar]
+  Southeast Asia:
+    _terms: [Southeast Asia, Southeast Asian, ASEAN, South China Sea, Strait of Malacca, Malacca Strait]
+    Brunei: [Bruneian]
+    Cambodia: [Cambodian, Phnom Penh]
+    Indonesia: [Indonesian, Jakarta, West Papua, Aceh]
+    Laos: [Laotian, Vientiane]
+    Malaysia: [Malaysian, Kuala Lumpur, Sabah]
+    Myanmar: [Burma, Burmese, Naypyidaw, Yangon, Rakhine, Rohingya, Arakan Army, Tatmadaw]
+    Philippines: [Philippine, Filipino, Manila, Mindanao]
+    Singapore: [Singaporean]
+    Thailand: [Thai, Bangkok]
+    Timor-Leste: [East Timor, Timorese, Dili]
+    Vietnam: [Vietnamese, Hanoi, Viet Nam]
+  South Asia:
+    _terms: [South Asia, South Asian, Kashmir, Kashmiri, Line of Control, SAARC, Bay of Bengal, Indian Ocean]
+    Afghanistan: [Afghan, Kabul, Taliban, Kandahar]
+    Bangladesh: [Bangladeshi, Dhaka]
+    Bhutan: [Bhutanese, Thimphu]
+    India: [Indian, New Delhi, Delhi, Mumbai, Manipur, Indian National Congress]
+    Maldives: [Maldivian]
+    Nepal: [Nepali, Nepalese, Kathmandu]
+    Pakistan: [Pakistani, Islamabad, Karachi, Lahore, Balochistan, Baloch, Khyber Pakhtunkhwa, Waziristan, TTP]
+    Sri Lanka: [Sri Lankan, Colombo]
+  Central Asia:
+    _terms: [Central Asia, Central Asian, Fergana Valley]
+    Kazakhstan: [Kazakh, Astana, Almaty]
+    Kyrgyzstan: [Kyrgyz, Bishkek]
+    Tajikistan: [Tajik, Dushanbe]
+    Turkmenistan: [Turkmen, Ashgabat]
+    Uzbekistan: [Uzbek, Tashkent]
+
+Middle East:
+  _terms: [Middle East, Middle Eastern, MENA, Arab League]
+  Levant:
+    _terms: [Levant, Golan Heights]
+    Israel: [Israeli, Tel Aviv, Jerusalem, IDF, Knesset]
+    Palestine: [Palestinian, Gaza, West Bank, Hamas, Ramallah, Rafah, Khan Younis, Jenin]
+    Lebanon: [Lebanese, Beirut, Hezbollah]
+    Syria: [Syrian, Damascus, Aleppo, Idlib, HTS]
+    Jordan: [Jordanian, Amman]
+  Gulf & Arabian Peninsula:
+    _terms: [Gulf Cooperation Council, GCC, Persian Gulf, Arabian Gulf, Strait of Hormuz, Hormuz, Red Sea, Gulf of Aden, Bab el-Mandeb, Bab al-Mandab, Arabian Sea]
+    Saudi Arabia: [Saudi, Riyadh, Jeddah]
+    United Arab Emirates: [UAE, Emirati, Abu Dhabi, Dubai]
+    Qatar: [Qatari]
+    Bahrain: [Bahraini, Manama]
+    Kuwait: [Kuwaiti]
+    Oman: [Omani, Muscat]
+    Yemen: [Yemeni, Sanaa, "Sana'a", Aden, Houthi, Houthis, Hodeidah]
+  Iran, Iraq & Türkiye:
+    _terms: [Kurdish, Kurds]
+    Iran: [Iranian, Tehran, IRGC, Islamic Republic]
+    Iraq: [Iraqi, Baghdad, Mosul, Erbil, Kurdistan Region, Basra]
+    Türkiye: [Turkey, Turkish, Ankara, Istanbul, PKK]
+
+Europe:
+  _terms: [Europe, European, European Union, EU, NATO, OSCE]
+  Western Europe:
+    _terms: [Western Europe, Benelux]
+    United Kingdom: [UK, U.K., Britain, British, England, Scotland, Wales, Northern Ireland, London, Downing Street]
+    Ireland: [Irish, Dublin]
+    France: [French, Paris, Elysee]
+    Germany: [German, Berlin, Bundeswehr]
+    Netherlands: [Dutch, Amsterdam]
+    Belgium: [Belgian]
+    Luxembourg: []
+    Austria: [Austrian]
+    Switzerland: [Swiss, Bern]
+    Liechtenstein: []
+    Monaco: []
+  Northern Europe:
+    _terms: [Nordic, Scandinavia, Scandinavian, Baltic, Baltics, Baltic Sea, North Sea]
+    Denmark: [Danish, Copenhagen]
+    Estonia: [Estonian, Tallinn]
+    Finland: [Finnish, Helsinki]
+    Iceland: [Icelandic, Reykjavik]
+    Latvia: [Latvian, Riga]
+    Lithuania: [Lithuanian, Vilnius]
+    Norway: [Norwegian, Oslo]
+    Sweden: [Swedish, Stockholm]
+  Southern Europe:
+    _terms: [Mediterranean, Southern Europe]
+    Andorra: []
+    Cyprus: [Cypriot, Nicosia]
+    Greece: [Greek, Athens]
+    Italy: [Italian, Rome]
+    Malta: [Maltese, Valletta]
+    Portugal: [Portuguese, Lisbon]
+    San Marino: []
+    Spain: [Spanish, Madrid, Catalonia, Barcelona]
+    Vatican: [Holy See]
+  Central Europe & Balkans:
+    _terms: [Balkans, Balkan, Western Balkans, Central Europe, Visegrad]
+    Albania: [Albanian, Tirana]
+    Bosnia and Herzegovina: [Bosnia, Bosnian, Sarajevo, Republika Srpska]
+    Bulgaria: [Bulgarian, Sofia]
+    Croatia: [Croatian, Zagreb]
+    Czechia: [Czech Republic, Czech, Prague]
+    Hungary: [Hungarian, Budapest]
+    Kosovo: [Kosovar, Pristina]
+    Montenegro: [Montenegrin, Podgorica]
+    North Macedonia: [Macedonian, Skopje]
+    Poland: [Polish, Warsaw]
+    Romania: [Romanian, Bucharest]
+    Serbia: [Serbian, Belgrade]
+    Slovakia: [Slovak, Bratislava]
+    Slovenia: [Slovenian, Ljubljana]
+  Eastern Europe & Caucasus:
+    _terms: [Eastern Europe, Caucasus, South Caucasus, Black Sea, Sea of Azov]
+    Russia: [Russian, Moscow, Kremlin, Putin, Kaliningrad, Chechnya, Chechen]
+    Belarus: [Belarusian, Minsk, Lukashenko]
+    Moldova: [Moldovan, Chisinau, Transnistria]
+    Ukraine: [Ukrainian, Kyiv, Kiev, Kharkiv, Odesa, Odessa, Donbas, Donetsk, Luhansk, Zaporizhzhia, Crimea, Kherson, Zelensky, Zelenskyy]
+    Armenia: [Armenian, Yerevan]
+    Azerbaijan: [Azerbaijani, Azeri, Baku, Nagorno-Karabakh, Karabakh]
+    Georgia:
+      aliases: [Georgian, Tbilisi, Abkhazia, South Ossetia]
+      exclude: "Atlanta|Georgia Senate|Georgia's governor|Fulton County|state of Georgia|Georgia Tech|University of Georgia|Savannah|Georgia, US|Georgia \\(US\\)"
+
+Oceania:
+  _terms: [Oceania, Pacific Islands, Pacific Island, Pacific Islands Forum, South Pacific]
+  Australia & New Zealand:
+    _terms: [AUKUS, ANZUS]
+    Australia: [Australian, Canberra, Sydney, Melbourne]
+    New Zealand: [New Zealander, Auckland]
+  Pacific Islands:
+    Fiji: [Fijian, Suva]
+    Kiribati: []
+    Marshall Islands: []
+    Micronesia: []
+    Nauru: []
+    Palau: []
+    Papua New Guinea: [PNG, Papua New Guinean, Port Moresby, Bougainville]
+    Samoa: [Samoan, Apia]
+    Solomon Islands: [Solomon Islander, Honiara]
+    Tonga: [Tongan, "Nuku'alofa"]
+    Tuvalu: []
+    Vanuatu: [Port Vila]
+    New Caledonia: [Noumea, Kanak]
+
+Polar regions:
+  Arctic:
+    _terms: [Arctic, Arctic Council, High North, Svalbard, Northern Sea Route]
+  Antarctica:
+    _terms: [Antarctica, Antarctic, Southern Ocean, Antarctic Treaty]

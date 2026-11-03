@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security Watch</title>
+<meta name="description" content="Global national-security news, sorted by place and domain, refreshed every 20 minutes.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%23f2a541' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%23f2a541' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23f2a541'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6f8; --panel:#ffffff; --panel-2:#f0f2f5; --line:#e2e5ea; --line-2:#d3d8df;
+  --text:#121821; --muted:#5b6575; --faint:#8a93a2;
+  --accent:#c2570c; --accent-soft:rgba(194,87,12,.10);
+  --high:#d92d3a; --elev:#d98a00; --ok:#1f9d55; --bad:#d92d3a;
+  --heat:194,87,12;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 1px rgba(16,24,40,.03);
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a0e13; --panel:#11171f; --panel-2:#161e28; --line:#1e2833; --line-2:#2a3644;
+    --text:#e4eaf1; --muted:#93a0b1; --faint:#5f6c7c;
+    --accent:#f2a541; --accent-soft:rgba(242,165,65,.12);
+    --high:#ff5a64; --elev:#f2b33d; --ok:#3ccf7d; --bad:#ff5a64;
+    --heat:242,165,65;
+    --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a0e13; --panel:#11171f; --panel-2:#161e28; --line:#1e2833; --line-2:#2a3644;
+  --text:#e4eaf1; --muted:#93a0b1; --faint:#5f6c7c;
+  --accent:#f2a541; --accent-soft:rgba(242,165,65,.12);
+  --high:#ff5a64; --elev:#f2b33d; --ok:#3ccf7d; --bad:#ff5a64;
+  --heat:242,165,65;
+  --shadow:none; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+input{font:inherit;color:inherit}
+.mono{font-family:var(--mono)}
+
+/* ── top bar ─────────────────────────────────────────── */
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;height:56px;padding:0 16px;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.brand svg{flex:none}
+.brand small{font:500 11px var(--mono);color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
+.status{display:flex;align-items:center;gap:8px;font:12px var(--mono);color:var(--muted);white-space:nowrap;overflow:hidden}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(60,207,125,.6);animation:ping 2.4s infinite;flex:none}
+.pulse-dot.stale{background:var(--elev);animation:none}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(60,207,125,.5)}70%{box-shadow:0 0 0 7px rgba(60,207,125,0)}100%{box-shadow:0 0 0 0 rgba(60,207,125,0)}}
+.spacer{flex:1}
+.iconbtn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted)}
+.iconbtn:hover{color:var(--text);border-color:var(--line-2)}
+.places-btn{display:none}
+
+/* ── layout ──────────────────────────────────────────── */
+.wrap{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:calc(100vh - 56px)}
+aside{border-right:1px solid var(--line);background:var(--panel);position:sticky;top:56px;height:calc(100vh - 56px);overflow:auto;padding:12px 10px 40px}
+main{min-width:0;padding:16px 20px 60px}
+.scrim{display:none}
+
+/* ── geography tree ─────────────────────────────────── */
+.side-h{display:flex;align-items:center;justify-content:space-between;font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:6px 8px 8px}
+.side-h button{font:500 11px var(--mono);color:var(--muted);text-transform:none;letter-spacing:0}
+.side-h button:hover{color:var(--accent)}
+.geo-find{width:100%;padding:7px 10px;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;margin:0 0 8px;outline:none}
+.geo-find:focus{border-color:var(--accent)}
+.node{display:flex;align-items:center;gap:6px;width:100%;padding:5px 8px;border-radius:6px;text-align:left;color:var(--text)}
+.node:hover{background:var(--panel-2)}
+.node.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.node .tw{width:14px;flex:none;color:var(--faint);font-size:10px;transition:transform .15s}
+.node .tw.open{transform:rotate(90deg)}
+.node .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.node .ct{font:11px var(--mono);color:var(--faint)}
+.node .hi{width:6px;height:6px;border-radius:50%;background:var(--high);flex:none}
+.node.l0{font-weight:600}
+.node.l1{padding-left:22px}
+.node.l2{padding-left:40px;font-size:13px}
+.node .star{opacity:0;color:var(--faint);font-size:13px;width:16px;flex:none}
+.node:hover .star,.node .star.on{opacity:1}
+.node .star.on{color:var(--accent)}
+.node.quiet .nm{color:var(--faint)}
+.kids{display:none}
+.kids.open{display:block}
+
+/* ── tabs & toolbar ─────────────────────────────────── */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:14px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:9px 12px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--text);border-bottom-color:var(--accent)}
+.tab .badge{font:11px var(--mono);color:var(--faint);margin-left:4px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{padding:6px 10px;font:500 12px var(--mono);color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--accent-soft);color:var(--accent)}
+.toggle{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:13px;color:var(--muted)}
+.toggle.on{border-color:var(--high);color:var(--high);background:color-mix(in srgb,var(--high) 8%,var(--panel))}
+.search{flex:1;min-width:180px;position:relative}
+.search input{width:100%;padding:7px 10px 7px 32px;border:1px solid var(--line);border-radius:8px;background:var(--panel);outline:none}
+.search input:focus{border-color:var(--accent)}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--faint)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-size:12.5px;color:var(--muted);white-space:nowrap}
+.chip:hover{border-color:var(--line-2);color:var(--text)}
+.chip i{width:8px;height:8px;border-radius:50%;flex:none}
+.chip .n{font:11px var(--mono);color:var(--faint)}
+.chip.on{color:var(--text);border-color:currentColor;background:var(--panel-2)}
+.chip.on .n{color:var(--muted)}
+.crumbs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:-2px 0 12px}
+.crumbs b{color:var(--text)}
+.crumbs .x{font:12px var(--mono);padding:2px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+.crumbs .x:hover{color:var(--accent);border-color:var(--accent)}
+
+/* ── feed ───────────────────────────────────────────── */
+.newbar{display:none;width:100%;padding:9px;margin-bottom:10px;border:1px solid var(--accent);border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.newbar.show{display:block}
+.list{display:flex;flex-direction:column;gap:6px}
+.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px 11px 16px;box-shadow:var(--shadow)}
+.card::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:transparent}
+.card.s2::before{background:var(--high)}
+.card.s1::before{background:var(--elev)}
+.card h3{margin:0 0 5px;font-size:15px;font-weight:600;line-height:1.35}
+.card h3 a{text-decoration:none}
+.card h3 a:hover{text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px}
+.card h3 a:visited{color:var(--muted)}
+.meta{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.meta .src{font-weight:500;color:var(--text)}
+.meta time{font-family:var(--mono)}
+.meta .via{font:10.5px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:1px 7px;border-radius:5px;background:var(--panel-2);font-size:11.5px;color:var(--muted);border:1px solid transparent}
+.tag:hover{border-color:var(--line-2);color:var(--text)}
+.tag i{width:7px;height:7px;border-radius:2px;flex:none}
+.tag.geo{font-weight:500;color:var(--text)}
+.more-src{font:11.5px var(--mono);color:var(--accent)}
+.more-src:hover{text-decoration:underline}
+.others{display:none;margin:7px 0 0;padding:7px 0 0;border-top:1px dashed var(--line);font-size:12.5px}
+.others.open{display:flex;flex-wrap:wrap;gap:4px 12px}
+.others a{color:var(--muted)}
+.others a:hover{color:var(--accent)}
+.sum{margin:5px 0 0;color:var(--muted);font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.showmore{display:block;margin:14px auto 0;padding:9px 18px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-weight:500}
+.showmore:hover{border-color:var(--accent);color:var(--accent)}
+.empty{padding:50px 20px;text-align:center;color:var(--muted);border:1px dashed var(--line-2);border-radius:12px;background:var(--panel)}
+.empty h3{margin:0 0 6px;color:var(--text)}
+
+/* ── briefing ───────────────────────────────────────── */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
+.kpi .l{font:600 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.kpi .v{font:600 26px var(--mono);margin-top:2px;letter-spacing:-.02em}
+.kpi .v.red{color:var(--high)}
+.kpi .s{font-size:12px;color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:14px;min-width:0}
+.panel-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:12px 14px 4px}
+.panel-h h2{margin:0;font-size:13px;font-weight:600;letter-spacing:.02em}
+.panel-h span{font-size:12px;color:var(--faint)}
+.panel-b{padding:8px 14px 14px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:14px}
+.matrix-wrap{overflow-x:auto}
+table.matrix{border-collapse:separate;border-spacing:3px;width:100%;min-width:760px}
+.matrix th{font:500 11px var(--sans);color:var(--muted);padding:2px 4px;vertical-align:bottom}
+.matrix thead th{height:86px;white-space:nowrap}
+.matrix thead th div{transform:rotate(-40deg);transform-origin:left bottom;width:16px;margin-left:12px;display:flex;align-items:center;gap:5px}
+.matrix thead th i{width:7px;height:7px;border-radius:2px;display:inline-block;flex:none}
+.matrix tbody th{text-align:left;font-size:12.5px;color:var(--text);white-space:nowrap;padding-right:10px}
+.matrix td{height:34px;min-width:44px;text-align:center;font:500 12px var(--mono);border-radius:6px;cursor:pointer;position:relative;color:var(--text);transition:outline-color .1s;outline:1px solid transparent}
+.matrix td:hover{outline-color:var(--accent)}
+.matrix td.z{color:var(--faint);cursor:default}
+.matrix td.z:hover{outline-color:transparent}
+.matrix td sup{position:absolute;top:3px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--high)}
+.matrix td.tot{font-weight:600;color:var(--muted);cursor:default;background:transparent}
+.hot{display:flex;flex-direction:column;gap:2px}
+.hot button{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 6px;border-radius:7px;text-align:left}
+.hot button:hover{background:var(--panel-2)}
+.hot .rk{font:11px var(--mono);color:var(--faint)}
+.hot .nm{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hot .nm small{display:block;font-weight:400;font-size:11.5px;color:var(--faint)}
+.hot .bar{display:flex;align-items:center;gap:8px;font:12px var(--mono);color:var(--muted)}
+.hot .bar span{display:block;height:6px;border-radius:3px;background:var(--accent);opacity:.75}
+.hot .bar em{font-style:normal;color:var(--high)}
+.top-list .card{box-shadow:none}
+.mini{font-size:12.5px;color:var(--muted)}
+
+/* ── links ──────────────────────────────────────────── */
+.links{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.lg h2{margin:0 0 8px;font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.lg a{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:8px;text-decoration:none;border:1px solid transparent}
+.lg a:hover{background:var(--panel);border-color:var(--line)}
+.lg .ini{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font:600 12px var(--mono);background:var(--accent-soft);color:var(--accent);flex:none}
+.lg b{display:block;font-weight:600;font-size:13.5px}
+.lg span{display:block;font-size:12px;color:var(--muted)}
+
+/* ── sources ────────────────────────────────────────── */
+table.src{width:100%;border-collapse:collapse;font-size:13px}
+.src th{text-align:left;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint);padding:8px 10px;border-bottom:1px solid var(--line)}
+.src td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.src td.num{font-family:var(--mono);text-align:right;color:var(--muted)}
+.src .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.src .err{color:var(--bad);font-size:12px}
+.src a{color:var(--muted);text-decoration:none}
+.src a:hover{color:var(--accent)}
+
+/* ── watchlist ──────────────────────────────────────── */
+.watch-head{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.wl-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 11px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500;font-size:13px}
+.wl-chip button{width:20px;height:20px;border-radius:50%;color:var(--accent)}
+.wl-chip button:hover{background:var(--accent);color:var(--panel)}
+
+footer{margin-top:28px;font-size:12px;color:var(--faint)}
+footer a{color:var(--muted)}
+
+/* ── responsive ─────────────────────────────────────── */
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:860px){
+  .wrap{grid-template-columns:1fr}
+  aside{position:fixed;left:0;top:56px;bottom:0;width:min(320px,88vw);z-index:40;transform:translateX(-100%);transition:transform .2s;height:auto;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  aside.open{transform:none}
+  .scrim{display:none;position:fixed;inset:56px 0 0;background:rgba(0,0,0,.35);z-index:35}
+  .scrim.open{display:block}
+  .places-btn{display:inline-flex}
+  main{padding:12px 16px 50px}
+  .status .long{display:none}
+  .brand small{display:none}
+}
+@media (max-width:520px){
+  .status{display:none}
+  .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -16px 12px;padding:0 16px}
+  .chips::-webkit-scrollbar{display:none}
+  .card h3{font-size:14.5px}
+  .kpi .v{font-size:22px}
+  .seg button{padding:6px 8px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="iconbtn places-btn" id="placesBtn" aria-label="Places">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="var(--accent)" stroke-width="2.5"/><circle cx="16" cy="16" r="7" fill="none" stroke="var(--accent)" stroke-width="2.5" opacity=".6"/><circle cx="16" cy="16" r="2.5" fill="var(--accent)"/></svg>
+    <span id="brandName">Security Watch</span>
+    <small>global</small>
+  </div>
+  <div class="status" id="status"><span class="pulse-dot" id="dot"></span><span id="statusText">Loading…</span></div>
+  <div class="spacer"></div>
+  <button class="iconbtn" id="refreshBtn" title="Refresh now" aria-label="Refresh">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+  </button>
+  <button class="iconbtn" id="themeBtn" title="Theme" aria-label="Theme">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg>
+  </button>
+</header>
+
+<div class="wrap">
+  <aside id="side">
+    <div class="side-h"><span>Places</span><button id="quietBtn">Show quiet</button></div>
+    <input class="geo-find" id="geoFind" placeholder="Find a country or region…" autocomplete="off">
+    <div id="tree"></div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main>
+    <nav class="tabs" id="tabs">
+      <button class="tab" data-v="brief">Briefing</button>
+      <button class="tab" data-v="feed">Feed <span class="badge" id="feedCount"></span></button>
+      <button class="tab" data-v="watch">Watchlist <span class="badge" id="watchCount"></span></button>
+      <button class="tab" data-v="links">Links</button>
+      <button class="tab" data-v="sources">Sources <span class="badge" id="srcCount"></span></button>
+    </nav>
+
+    <div class="toolbar" id="toolbar">
+      <div class="seg" id="win">
+        <button data-h="1">1h</button><button data-h="6">6h</button><button data-h="24">24h</button><button data-h="48">48h</button>
+      </div>
+      <button class="toggle" id="highBtn">● High priority only</button>
+      <label class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Search headlines, sources…" autocomplete="off">
+      </label>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="crumbs" id="crumbs"></div>
+    <button class="newbar" id="newbar"></button>
+
+    <section id="view"></section>
+
+    <footer id="foot"></footer>
+  </main>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ── state ────────────────────────────────────────────────────────────────
+const S = {
+  data: null, items: [], domains: [], domMap: {}, tax: {}, regCont: {}, ctyReg: {},
+  view: 'brief', geo: null, doms: new Set(), win: 24, high: false, q: '',
+  limit: 150, showQuiet: false, open: new Set(), pending: null,
+  watch: new Set(load('sw.watch', [])),
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function load(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } }
+function save(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+const fmtN = n => n.toLocaleString('en');
+function ago(ms){
+  const m = Math.max(0, Math.round((Date.now() - ms) / 60000));
+  if (m < 1) return 'now'; if (m < 60) return m + 'm';
+  const h = Math.floor(m / 60); if (h < 48) return h + 'h' + (h < 6 && m % 60 ? ' ' + (m % 60) + 'm' : '');
+  return Math.floor(h / 24) + 'd';
+}
+const local = ms => new Date(ms).toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'});
+
+// ── theme ────────────────────────────────────────────────────────────────
+const root = document.documentElement;
+let theme = load('sw.theme', 'auto');
+const applyTheme = () => { if (theme === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', theme); };
+applyTheme();
+$('#themeBtn').onclick = () => {
+  const dark = theme === 'dark' || (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  theme = dark ? 'light' : 'dark'; save('sw.theme', theme); applyTheme();
+};
+
+// ── URL hash ⇄ state (so any view can be bookmarked) ─────────────────────
+function readHash(){
+  const p = new URLSearchParams(location.hash.slice(1));
+  S.view = p.get('v') || 'brief';
+  const g = p.get('geo'); S.geo = g ? {type: g.split(':')[0], name: g.slice(g.indexOf(':') + 1)} : null;
+  S.doms = new Set((p.get('d') || '').split(',').filter(Boolean));
+  S.win = +(p.get('h') || 24) || 24;
+  S.high = p.get('hi') === '1';
+  S.q = p.get('q') || '';
+  $('#q').value = S.q;
+}
+function writeHash(){
+  const p = new URLSearchParams();
+  if (S.view !== 'brief') p.set('v', S.view);
+  if (S.geo) p.set('geo', S.geo.type + ':' + S.geo.name);
+  if (S.doms.size) p.set('d', [...S.doms].join(','));
+  if (S.win !== 24) p.set('h', S.win);
+  if (S.high) p.set('hi', '1');
+  if (S.q) p.set('q', S.q);
+  const h = p.toString();
+  history.replaceState(null, '', h ? '#' + h : location.pathname + location.search);
+}
+
+// ── data ─────────────────────────────────────────────────────────────────
+async function fetchData(){
+  const r = await fetch('data/news.json?t=' + Date.now(), {cache: 'no-store'});
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+function ingest(d){
+  S.data = d;
+  S.domains = d.domains || [];
+  S.domMap = Object.fromEntries(S.domains.map(x => [x.id, x]));
+  S.tax = d.taxonomy || {};
+  S.regCont = {}; S.ctyReg = {};
+  for (const [k, regs] of Object.entries(S.tax))
+    for (const [r, cs] of Object.entries(regs)) { S.regCont[r] = k; for (const c of cs) S.ctyReg[c] = r; }
+  S.items = (d.items || []).map(it => {
+    it.ts = Date.parse(it.p);
+    it.lc = (it.t + ' ' + it.s + ' ' + (it.x || '') + ' ' + (it.c || []).join(' ')).toLowerCase();
+    return it;
+  });
+  document.title = d.title || 'Security Watch';
+  $('#brandName').textContent = d.title || 'Security Watch';
+}
+async function init(){
+  readHash();
+  try { ingest(await fetchData()); }
+  catch (e) { renderNoData(e); return; }
+  render();
+  setInterval(updateStatus, 30000);
+  setInterval(poll, 5 * 60000);
+}
+async function poll(){
+  try {
+    const d = await fetchData();
+    if (!S.data || d.generated === S.data.generated) return;
+    const known = new Set(S.items.map(i => i.id));
+    const fresh = (d.items || []).filter(i => !known.has(i.id)).length;
+    S.pending = d;
+    const nb = $('#newbar');
+    nb.textContent = fresh ? `${fresh} new report${fresh > 1 ? 's' : ''} — show` : 'Data updated — refresh view';
+    nb.classList.add('show');
+  } catch (e) { /* try again next time */ }
+}
+$('#newbar').onclick = () => { if (S.pending) { ingest(S.pending); S.pending = null; } $('#newbar').classList.remove('show'); render(); };
+$('#refreshBtn').onclick = async () => {
+  try { ingest(await fetchData()); S.pending = null; $('#newbar').classList.remove('show'); render(); }
+  catch (e) { renderNoData(e); }
+};
+
+// ── filtering ────────────────────────────────────────────────────────────
+const inWin = it => it.ts >= Date.now() - S.win * 3600e3;
+function geoMatch(it, g){
+  if (!g) return true;
+  if (g.type === 'unplaced') return !(it.k && it.k.length);
+  const arr = g.type === 'continent' ? it.k : g.type === 'region' ? it.g : it.c;
+  return !!arr && arr.includes(g.name);
+}
+function passes(it, {geo = true, dom = true} = {}){
+  if (!inWin(it)) return false;
+  if (S.high && it.sev < 2) return false;
+  if (dom && S.doms.size && !it.d.some(d => S.doms.has(d))) return false;
+  if (S.q && !S.q.toLowerCase().split(/\s+/).every(w => it.lc.includes(w))) return false;
+  if (geo && !geoMatch(it, S.geo)) return false;
+  return true;
+}
+function watchMatch(it){
+  for (const w of S.watch) {
+    const [t, n] = [w.slice(0, w.indexOf(':')), w.slice(w.indexOf(':') + 1)];
+    if (geoMatch(it, {type: t, name: n})) return true;
+  }
+  return false;
+}
+
+// ── render: shared ───────────────────────────────────────────────────────
+function render(){
+  writeHash();
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.v === S.view));
+  document.querySelectorAll('#win button').forEach(b => b.classList.toggle('on', +b.dataset.h === S.win));
+  $('#highBtn').classList.toggle('on', S.high);
+  const filterViews = ['brief', 'feed', 'watch'];
+  $('#toolbar').style.display = filterViews.includes(S.view) ? '' : 'none';
+  $('#chips').style.display = ['feed', 'watch'].includes(S.view) ? '' : 'none';
+  $('#crumbs').style.display = S.view === 'feed' ? '' : 'none';
+  updateStatus(); renderTree(); renderChips(); renderCrumbs(); renderCounts();
+  ({brief: renderBrief, feed: renderFeed, watch: renderWatch, links: renderLinks, sources: renderSources}[S.view] || renderBrief)();
+  renderFoot();
+}
+function updateStatus(){
+  if (!S.data) return;
+  const gen = Date.parse(S.data.generated);
+  const mins = (Date.now() - gen) / 60000;
+  const total = S.items.filter(inWin).length;
+  $('#dot').classList.toggle('stale', mins > 90);
+  const when = ago(gen) === 'now' ? 'just now' : ago(gen) + ' ago';
+  $('#statusText').innerHTML = `Updated ${when}<span class="long"> · ${fmtN(total)} reports in ${S.win}h${mins > 90 ? ' · <span style="color:var(--elev)">updates may be paused</span>' : ''}</span>`;
+  $('#statusText').title = 'Last collected ' + local(gen);
+}
+function renderCounts(){
+  $('#feedCount').textContent = fmtN(S.items.filter(i => passes(i)).length);
+  $('#watchCount').textContent = S.watch.size ? fmtN(S.items.filter(i => passes(i, {geo: false}) && watchMatch(i)).length) : '';
+  const src = S.data.sources || [];
+  const bad = src.filter(s => !s.ok).length;
+  $('#srcCount').textContent = bad ? `${bad} down` : '';
+}
+function renderChips(){
+  const base = S.items.filter(i => passes(i, {dom: false, geo: S.view !== 'watch'}) && (S.view !== 'watch' || watchMatch(i)));
+  const cnt = {}; for (const it of base) for (const d of it.d) cnt[d] = (cnt[d] || 0) + 1;
+  $('#chips').innerHTML = S.domains.filter(d => cnt[d.id] || S.doms.has(d.id)).map(d =>
+    `<button class="chip ${S.doms.has(d.id) ? 'on' : ''}" data-d="${esc(d.id)}" style="${S.doms.has(d.id) ? 'color:' + d.color : ''}"><i style="background:${d.color}"></i><span style="color:var(--text)">${esc(d.label)}</span><span class="n">${cnt[d.id] || 0}</span></button>`
+  ).join('') + (S.doms.size ? `<button class="chip" data-d="__clear">Clear topics ✕</button>` : '');
+}
+$('#chips').onclick = e => {
+  const b = e.target.closest('[data-d]'); if (!b) return;
+  const d = b.dataset.d;
+  if (d === '__clear') S.doms.clear(); else S.doms.has(d) ? S.doms.delete(d) : S.doms.add(d);
+  S.limit = 150; render();
+};
+function geoPath(g){
+  if (!g) return [];
+  if (g.type === 'unplaced') return [{type: 'unplaced', name: 'Global / unplaced'}];
+  if (g.type === 'continent') return [g];
+  if (g.type === 'region') return [{type: 'continent', name: S.regCont[g.name]}, g];
+  const r = S.ctyReg[g.name];
+  return [{type: 'continent', name: S.regCont[r]}, {type: 'region', name: r}, g];
+}
+function renderCrumbs(){
+  const path = geoPath(S.geo);
+  $('#crumbs').innerHTML = `<button data-g="">World</button>` + path.map((p, i) =>
+    ` › ${i === path.length - 1 ? `<b>${esc(p.name)}</b>` : `<button data-g="${esc(p.type + ':' + p.name)}">${esc(p.name)}</button>`}`).join('') +
+    (S.geo ? ` <button class="x" data-g="">clear ✕</button>` : '');
+}
+$('#crumbs').onclick = e => { const b = e.target.closest('[data-g]'); if (b) setGeo(b.dataset.g); };
+function setGeo(str, view){
+  S.geo = str ? {type: str.split(':')[0], name: str.slice(str.indexOf(':') + 1)} : null;
+  if (S.geo) for (const p of geoPath(S.geo)) S.open.add(p.type + ':' + p.name);
+  S.view = view || (S.view === 'brief' || S.view === 'links' || S.view === 'sources' ? 'feed' : S.view);
+  if (S.view === 'watch') S.view = 'feed';
+  S.limit = 150; closeSide(); render(); window.scrollTo({top: 0});
+}
+
+// ── geography tree ───────────────────────────────────────────────────────
+function renderTree(){
+  const base = S.items.filter(i => passes(i, {geo: false}));
+  const cnt = {}, hi = {};
+  const bump = (key, it) => { cnt[key] = (cnt[key] || 0) + 1; if (it.sev === 2) hi[key] = 1; };
+  let unplaced = 0;
+  for (const it of base) {
+    for (const k of it.k || []) bump('continent:' + k, it);
+    for (const g of it.g || []) bump('region:' + g, it);
+    for (const c of it.c || []) bump('country:' + c, it);
+    if (!(it.k && it.k.length)) unplaced++;
+  }
+  const find = $('#geoFind').value.trim().toLowerCase();
+  const cur = S.geo ? S.geo.type + ':' + S.geo.name : '';
+  const node = (key, name, lvl, opts = {}) => {
+    const n = cnt[key] || 0, isOn = cur === key, star = S.watch.has(key);
+    return `<button class="node l${lvl} ${isOn ? 'on' : ''} ${n ? '' : 'quiet'}" data-g="${esc(key)}">
+      ${opts.tw !== undefined ? `<span class="tw ${opts.tw ? 'open' : ''}" data-tw="${esc(key)}">▶</span>` : (lvl === 2 ? '' : '<span class="tw"></span>')}
+      <span class="nm">${esc(name)}</span>${hi[key] ? '<span class="hi" title="High-priority reports"></span>' : ''}
+      <span class="ct">${n || ''}</span>
+      ${lvl > 0 ? `<span class="star ${star ? 'on' : ''}" data-star="${esc(key)}" title="${star ? 'Remove from' : 'Add to'} watchlist">${star ? '★' : '☆'}</span>` : ''}
+    </button>`;
+  };
+  let html = `<button class="node l0 ${!S.geo ? 'on' : ''}" data-g=""><span class="tw"></span><span class="nm">World</span><span class="ct">${base.length}</span></button>`;
+  for (const [cont, regs] of Object.entries(S.tax)) {
+    const ck = 'continent:' + cont;
+    const contHit = !find || cont.toLowerCase().includes(find);
+    let inner = '', any = false;
+    for (const [reg, ctys] of Object.entries(regs)) {
+      const rk = 'region:' + reg;
+      const regHit = contHit || reg.toLowerCase().includes(find);
+      const shown = ctys.filter(c => (S.showQuiet || cnt['country:' + c] || find) && (regHit || c.toLowerCase().includes(find)))
+                        .sort((a, b) => (cnt['country:' + b] || 0) - (cnt['country:' + a] || 0) || a.localeCompare(b));
+      if (!regHit && !shown.length) continue;
+      if (!S.showQuiet && !find && !cnt[rk]) continue;
+      any = true;
+      const ro = S.open.has(rk) || !!find;
+      inner += node(rk, reg, 1, {tw: shown.length ? ro : undefined}) +
+        `<div class="kids ${ro ? 'open' : ''}">${shown.map(c => node('country:' + c, c, 2)).join('')}</div>`;
+    }
+    if (!any && !contHit) continue;
+    if (!S.showQuiet && !find && !cnt[ck]) continue;
+    const co = S.open.has(ck) || !!find;
+    html += node(ck, cont, 0, {tw: co}) + `<div class="kids ${co ? 'open' : ''}">${inner}</div>`;
+  }
+  if (unplaced && !find) { cnt['unplaced:Global'] = unplaced; html += node('unplaced:Global', 'Global / unplaced', 0); }
+  $('#tree').innerHTML = html;
+}
+$('#tree').onclick = e => {
+  const st = e.target.closest('[data-star]');
+  if (st) { e.stopPropagation(); const k = st.dataset.star; S.watch.has(k) ? S.watch.delete(k) : S.watch.add(k); save('sw.watch', [...S.watch]); render(); return; }
+  const tw = e.target.closest('[data-tw]');
+  if (tw) { e.stopPropagation(); const k = tw.dataset.tw; S.open.has(k) ? S.open.delete(k) : S.open.add(k); renderTree(); return; }
+  const n = e.target.closest('[data-g]'); if (n) setGeo(n.dataset.g);
+};
+$('#geoFind').oninput = renderTree;
+$('#quietBtn').onclick = () => { S.showQuiet = !S.showQuiet; $('#quietBtn').textContent = S.showQuiet ? 'Hide quiet' : 'Show quiet'; renderTree(); };
+
+// ── cards ────────────────────────────────────────────────────────────────
+function card(it){
+  const doms = it.d.map(d => S.domMap[d]).filter(Boolean);
+  const geo = (it.c && it.c.length ? it.c.map(c => ['country', c]) : (it.g && it.g.length ? it.g.map(g => ['region', g]) : (it.k || []).map(k => ['continent', k]))).slice(0, 3);
+  const others = it.o || [];
+  return `<article class="card s${it.sev}">
+    <h3><a href="${esc(it.u)}" target="_blank" rel="noopener noreferrer">${esc(it.t)}</a></h3>
+    <div class="meta">
+      <span class="src">${esc(it.s)}</span>
+      <time datetime="${esc(it.p)}" title="${esc(local(it.ts))}">${ago(it.ts)}</time>
+      ${it.n > 1 ? `<button class="more-src" data-more="${esc(it.id)}">+${it.n - 1} outlet${it.n > 2 ? 's' : ''}</button>` : ''}
+      ${geo.map(([t, n]) => `<button class="tag geo" data-g="${esc(t + ':' + n)}">${esc(n)}</button>`).join('')}
+      ${doms.map(d => `<button class="tag" data-dom="${esc(d.id)}"><i style="background:${d.color}"></i>${esc(d.label)}</button>`).join('')}
+      <span class="via">${it.v === 'gnews' ? 'via Google News' : it.v === 'gdelt' ? 'via GDELT' : ''}</span>
+    </div>
+    ${it.x ? `<p class="sum">${esc(it.x)}</p>` : ''}
+    ${others.length ? `<div class="others" id="o-${esc(it.id)}">${others.map(o => `<a href="${esc(o.u)}" target="_blank" rel="noopener noreferrer">${esc(o.s)} ↗</a>`).join('')}${it.n - 1 > others.length ? `<span class="mini">+${it.n - 1 - others.length} more</span>` : ''}</div>` : ''}
+  </article>`;
+}
+document.addEventListener('click', e => {
+  const m = e.target.closest('[data-more]');
+  if (m) { const el = document.getElementById('o-' + m.dataset.more); if (el) el.classList.toggle('open'); return; }
+  const g = e.target.closest('.card [data-g], .hot [data-g], .matrix [data-g]');
+  if (g) { const dom = g.dataset.dom2; if (dom !== undefined) { S.doms = new Set(dom ? [dom] : []); } setGeo(g.dataset.g, 'feed'); return; }
+  const d = e.target.closest('.card [data-dom]');
+  if (d) { S.doms = new Set([d.dataset.dom]); S.view = 'feed'; S.limit = 150; render(); window.scrollTo({top: 0}); }
+});
+function list(items, emptyMsg){
+  if (!items.length) return `<div class="empty"><h3>Nothing here right now</h3><div>${emptyMsg}</div></div>`;
+  const shown = items.slice(0, S.limit);
+  return `<div class="list">${shown.map(card).join('')}</div>` +
+    (items.length > S.limit ? `<button class="showmore" id="showMore">Show more (${fmtN(items.length - S.limit)} left)</button>` : '');
+}
+$('#view').addEventListener('click', e => { if (e.target.id === 'showMore') { S.limit += 150; ({feed: renderFeed, watch: renderWatch})[S.view]?.(); } });
+
+// ── views ────────────────────────────────────────────────────────────────
+function renderFeed(){
+  const items = S.items.filter(i => passes(i));
+  $('#view').innerHTML = list(items, 'Try a longer time window, fewer topics, or clear the search.');
+}
+function renderWatch(){
+  if (!S.watch.size) {
+    $('#view').innerHTML = `<div class="empty"><h3>Your watchlist is empty</h3><div>Hover any country or region in the Places list and click ☆ to follow it.<br>It's saved in this browser.</div></div>`;
+    return;
+  }
+  const chips = [...S.watch].map(w => `<span class="wl-chip">${esc(w.slice(w.indexOf(':') + 1))}<button data-unwatch="${esc(w)}" title="Remove">✕</button></span>`).join('');
+  const items = S.items.filter(i => passes(i, {geo: false}) && watchMatch(i));
+  $('#view').innerHTML = `<div class="watch-head">${chips}</div>` + list(items, 'No reports for your watchlist in this window.');
+}
+$('#view').addEventListener('click', e => {
+  const b = e.target.closest('[data-unwatch]');
+  if (b) { S.watch.delete(b.dataset.unwatch); save('sw.watch', [...S.watch]); render(); }
+});
+
+function renderBrief(){
+  const base = S.items.filter(i => passes(i, {geo: false, dom: false}));
+  const conts = Object.keys(S.tax);
+  // KPIs
+  const highN = base.filter(i => i.sev === 2).length;
+  const ctys = new Set(); base.forEach(i => (i.c || []).forEach(c => ctys.add(c)));
+  const src = S.data.sources || [], okN = src.filter(s => s.ok).length;
+  // matrix
+  const M = {}, H = {}; let max = 1;
+  for (const it of base) {
+    const ks = it.k && it.k.length ? it.k : ['Global / unplaced'];
+    for (const k of ks) for (const d of it.d) {
+      const key = k + '|' + d; M[key] = (M[key] || 0) + 1; if (it.sev === 2) H[key] = 1; max = Math.max(max, M[key]);
+    }
+  }
+  const rows = [...conts, 'Global / unplaced'];
+  const heat = n => n ? `background:rgba(var(--heat),${(0.08 + 0.72 * Math.sqrt(n / max)).toFixed(3)})` : 'background:var(--panel-2)';
+  const matrix = `<table class="matrix"><thead><tr><th></th>${S.domains.map(d => `<th><div><i style="background:${d.color}"></i>${esc(d.label.split(/[ ,&]/)[0])}</div></th>`).join('')}<th><div>Total</div></th></tr></thead><tbody>` +
+    rows.map(k => {
+      const gk = k === 'Global / unplaced' ? 'unplaced:Global' : 'continent:' + k;
+      const tot = base.filter(i => k === 'Global / unplaced' ? !(i.k && i.k.length) : (i.k || []).includes(k)).length;
+      return `<tr><th>${esc(k)}</th>${S.domains.map(d => {
+        const n = M[k + '|' + d.id] || 0;
+        return `<td class="${n ? '' : 'z'}" style="${heat(n)}" ${n ? `data-g="${esc(gk)}" data-dom2="${esc(d.id)}" title="${esc(k)} · ${esc(d.label)}: ${n}"` : ''}>${n || '·'}${H[k + '|' + d.id] ? '<sup></sup>' : ''}</td>`;
+      }).join('')}<td class="tot">${tot}</td></tr>`;
+    }).join('') + '</tbody></table>';
+  // hotspots
+  const hs = {};
+  for (const it of base) for (const c of it.c || []) { const h = hs[c] || (hs[c] = {n: 0, hi: 0, doms: {}}); h.n++; if (it.sev === 2) h.hi++; for (const d of it.d) h.doms[d] = (h.doms[d] || 0) + 1; }
+  const hot = Object.entries(hs).map(([c, h]) => [c, h, h.n + 2 * h.hi]).sort((a, b) => b[2] - a[2]).slice(0, 12);
+  const hmax = hot.length ? hot[0][2] : 1;
+  const hotHtml = hot.length ? `<div class="hot">${hot.map(([c, h, sc], i) => {
+    const topDom = Object.entries(h.doms).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([d]) => S.domMap[d]?.label).filter(Boolean).join(' · ');
+    return `<button data-g="${esc('country:' + c)}"><span class="rk">${i + 1}</span><span class="nm">${esc(c)}<small>${esc(S.ctyReg[c] || '')} · ${esc(topDom)}</small></span><span class="bar"><span style="width:${Math.max(6, 70 * sc / hmax)}px"></span>${h.n}${h.hi ? ` <em>▲${h.hi}</em>` : ''}</span></button>`;
+  }).join('')}</div>` : `<div class="mini">No country-level reports in this window yet.</div>`;
+  // top stories
+  const top = base.filter(i => i.sev === 2 || i.n >= 3)
+    .sort((a, b) => (b.sev - a.sev) || (b.n - a.n) || (b.ts - a.ts)).slice(0, 8);
+  $('#view').innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><div class="l">Reports · ${S.win}h</div><div class="v">${fmtN(base.length)}</div><div class="s">${S.data.new_this_run ? fmtN(S.data.new_this_run) + ' new in last run' : 'deduplicated stories'}</div></div>
+      <div class="kpi"><div class="l">High priority</div><div class="v red">${fmtN(highN)}</div><div class="s">casualties, coups, strikes…</div></div>
+      <div class="kpi"><div class="l">Countries active</div><div class="v">${ctys.size}</div><div class="s">of ${Object.keys(S.ctyReg).length} tracked</div></div>
+      <div class="kpi"><div class="l">Sources online</div><div class="v">${okN}<span style="font-size:15px;color:var(--faint)">/${src.length}</span></div><div class="s">${src.length - okN ? (src.length - okN) + ' failing — see Sources' : 'all reporting'}</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h2>Pulse — reports by continent and domain</h2><span>click a cell to open it · red dot = high priority</span></div>
+      <div class="panel-b matrix-wrap">${matrix}</div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><div class="panel-h"><h2>Hotspots</h2><span>reports · ▲ high priority</span></div><div class="panel-b">${hotHtml}</div></div>
+      <div class="panel"><div class="panel-h"><h2>Top stories</h2><span>most severe and most widely reported</span></div><div class="panel-b top-list">${top.length ? `<div class="list">${top.map(card).join('')}</div>` : '<div class="mini">No major stories in this window.</div>'}</div></div>
+    </div>`;
+}
+
+function renderLinks(){
+  const groups = S.data.links || [];
+  $('#view').innerHTML = `<div class="links">${groups.map(g => `<div class="lg"><h2>${esc(g.group)}</h2>${(g.items || []).map(l =>
+    `<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><span class="ini">${esc((l.name || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase())}</span><span><b>${esc(l.name)}</b><span>${esc(l.note || '')}</span></span></a>`).join('')}</div>`).join('')}</div>
+    <p class="mini" style="margin-top:18px">Add or change links in <span class="mono">config/sources.yaml</span> under <span class="mono">links:</span>.</p>`;
+}
+
+function renderSources(){
+  const src = [...(S.data.sources || [])].sort((a, b) => (a.ok - b.ok) || a.name.localeCompare(b.name));
+  const kinds = {feed: 'RSS feed', google_news: 'Google News', gdelt: 'GDELT'};
+  $('#view').innerHTML = `<div class="panel"><div class="panel-b" style="overflow-x:auto">
+    <p class="mini" style="margin:4px 0 10px">Status from the last collection run (${esc(local(Date.parse(S.data.generated)))}, took ${S.data.run_seconds}s). A failing source is simply skipped. If one stays red for days, fix or remove it in <span class="mono">config/sources.yaml</span>.</p>
+    <table class="src"><thead><tr><th>Source</th><th>Type</th><th style="text-align:right">Fetched</th><th style="text-align:right">Kept</th><th>Status</th></tr></thead><tbody>
+    ${src.map(s => `<tr><td><span class="dot" style="background:${s.ok ? 'var(--ok)' : 'var(--bad)'}"></span>${s.kind === 'feed' ? `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.name)}</a>` : esc(s.name)}</td>
+      <td>${esc(kinds[s.kind] || s.kind)}</td><td class="num">${s.count}</td><td class="num">${s.kept}</td>
+      <td>${s.ok ? '<span class="mini">OK</span>' : `<span class="err">${esc(s.error || 'failed')}</span>`}</td></tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+
+function renderFoot(){
+  $('#foot').innerHTML = `Collected automatically every ~20 minutes from ${S.data.sources?.length || 0} sources, RSS feeds, Google News and <a href="https://www.gdeltproject.org" target="_blank" rel="noopener">GDELT</a>. Headlines link to the original publishers. Automatic tagging can be wrong: always check the source.`;
+}
+
+function renderNoData(e){
+  $('#statusText').textContent = 'No data yet';
+  $('#dot').classList.add('stale');
+  $('#toolbar').style.display = 'none';
+  $('#view').innerHTML = `<div class="empty"><h3>No data yet</h3><div>The collector hasn't published its first run.<br>On GitHub, open the <b>Actions</b> tab → <b>Update dashboard</b> → <b>Run workflow</b>, wait 2–3 minutes, then refresh this page.</div><div class="mini" style="margin-top:10px">(${esc(e && e.message || e)})</div></div>`;
+}
+
+// ── wiring ───────────────────────────────────────────────────────────────
+$('#tabs').onclick = e => { const t = e.target.closest('.tab'); if (!t) return; S.view = t.dataset.v; S.limit = 150; render(); };
+$('#win').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.win = +b.dataset.h; S.limit = 150; render(); };
+$('#highBtn').onclick = () => { S.high = !S.high; S.limit = 150; render(); };
+let qt; $('#q').oninput = e => { clearTimeout(qt); qt = setTimeout(() => { S.q = e.target.value.trim(); S.limit = 150; if (S.view === 'brief' && S.q) S.view = 'feed'; render(); }, 200); };
+function closeSide(){ $('#side').classList.remove('open'); $('#scrim').classList.remove('open'); }
+$('#placesBtn').onclick = () => { $('#side').classList.add('open'); $('#scrim').classList.add('open'); };
+$('#scrim').onclick = closeSide;
+window.addEventListener('hashchange', () => { readHash(); if (S.data) render(); });
+
+init();
+})();
+</script>
+</body>
+</html>

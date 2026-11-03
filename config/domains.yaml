@@ -1,0 +1,101 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  DOMAINS — how headlines get sorted by topic
+#
+#  • keywords: words or phrases that put a headline in this domain.
+#    A trailing * matches any ending:  terror*  → terror, terrorist, terrorism
+#    ALL-CAPS short words (WHO, NATO, IED) are matched case-sensitively,
+#    so "WHO" (the organisation) never matches the ordinary word "who".
+#  • exclude: phrases removed before checking this domain, to avoid false
+#    hits (e.g. "trade war" shouldn't count as armed conflict).
+#  • A headline can belong to several domains at once.
+#  • color: the tag colour on the dashboard.
+# ─────────────────────────────────────────────────────────────────────────────
+
+domains:
+  conflict:
+    label: Armed conflict & military
+    color: "#e5484d"
+    keywords: [airstrike*, air strike*, drone strike*, drone attack*, shelling, shells, shelled, strikes on, strikes against, strikes hit, strikes target*, retaliatory strike*, military strike*, precision strike*, drone*, artillery, troops, soldier*, military, army, armed forces, offensive, counteroffensive, ceasefire, cease-fire, truce, frontline, front line, clash*, fighting, battle*, insurgen*, rebel*, militia*, armed group*, warplane*, fighter jet*, missile*, rocket*, invasion, invade*, war, wars, warfare, mobiliz*, mobilis*, conscript*, defence ministry, defense ministry, defence minister, defense minister, defence secretary, defense secretary, peacekeep*, war crime*, combat, paramilitar*, ambush*, siege, occupied territor*, annex*, military drill*, military exercise*, special forces]
+    exclude: [trade war, price war, culture war, war of words, star wars, war on drugs, tariff war, legal battle, court battle, battle with cancer, battleground state*]
+
+  terrorism:
+    label: Terrorism & extremism
+    color: "#c2298a"
+    keywords: [terror*, extremis*, jihad*, militant*, suicide bomb*, suicide attack*, car bomb*, IED, IEDs, improvised explosive*, Islamic State, ISIS, ISIL, IS-K, ISKP, al-Qaeda, al Qaeda, al-Shabaab, Boko Haram, JNIM, ISWAP, Hamas, Hezbollah, Houthi*, TTP, hostage*, kidnap*, abduct*, radicali*, lone wolf, counterterror*, counter-terror*, beheading*, beheaded, massacre*, gunmen, bandits, mass shooting*, stabbing attack]
+
+  political:
+    label: Political stability & unrest
+    color: "#f76b15"
+    keywords: [coup, coups, coup attempt, junta, putsch, mutiny, protest*, demonstrator*, demonstration*, riot*, unrest, uprising, election*, vote, voting, ballot*, referendum, polls, poll, opposition leader*, opposition party, impeach*, resign*, state of emergency, martial law, curfew, crackdown, assassinat*, constitution*, overthrow*, ousted, seized power, regime, government collapse, no-confidence, no confidence vote, power struggle, dissident*, political prisoner*, internet shutdown*, arrested opposition, transitional government, military government]
+
+  cyber:
+    label: Cyber & information ops
+    color: "#3e63dd"
+    keywords: [cyber*, hack, hacks, hacked, hacker*, hacking, ransomware, malware, data breach*, security breach*, phishing, DDoS, zero-day, zero day, spyware, vulnerabilit*, botnet*, APT, CISA, NCSC, disinformation, misinformation, propaganda, influence operation*, influence campaign*, troll farm*, deepfake*, information warfare, election interference, foreign interference, internet outage*, Pegasus, cyber espionage, state-sponsored hackers, critical infrastructure]
+
+  diplomacy:
+    label: Diplomacy, alliances & sanctions
+    color: "#0090ff"
+    keywords: [sanction*, embargo*, summit*, diplomat*, embassy, embassies, ambassador*, foreign minister*, foreign ministry, secretary of state, treaty, treaties, alliance*, NATO, United Nations, UN Security Council, Security Council, General Assembly, G7, G20, BRICS, ASEAN, African Union, ECOWAS, SADC, peace talks, peace deal*, peace agreement*, peace process, negotiation*, mediat*, bilateral, envoy*, expel*, expulsion*, accord, accords, normaliz*, normalis*, state visit, recognise, recognize, recognition of, defence pact, defense pact, security pact, mutual defence, mutual defense]
+
+  economic:
+    label: Economic & energy security
+    color: "#d4a017"
+    keywords: [oil price*, gas price*, crude, OPEC, energy security, energy crisis, pipeline*, LNG, natural gas, supply chain*, semiconductor*, chips act, export control*, export ban*, tariff*, trade war, rare earth*, critical mineral*, currency crisis, debt crisis, debt default, defaults on, IMF, World Bank, food security, food prices, grain, wheat, fertiliser, fertilizer, blackout*, power grid, power outage*, electricity shortage*, fuel shortage*, economic coercion, economic security, investment screening, asset freeze*, frozen assets]
+
+  maritime:
+    label: Maritime security
+    color: "#12a594"
+    keywords: [maritime, navy, naval, warship*, frigate*, destroyer*, aircraft carrier*, submarine*, coast guard, coastguard, piracy, pirate*, vessel*, tanker*, cargo ship*, container ship*, ship, ships, shipping, strait, straits, sea lane*, freedom of navigation, maritime militia, undersea cable*, subsea cable*, shadow fleet, seized ship*, ship seized, illegal fishing, IUU fishing, boarded, territorial waters, exclusive economic zone, EEZ]
+
+  wmd:
+    label: Nuclear, WMD & arms control
+    color: "#8e4ec6"
+    keywords: [nuclear, nuke*, uranium, enrichment, plutonium, warhead*, ICBM, ICBMs, ballistic missile*, hypersonic, chemical weapon*, biological weapon*, bioweapon*, nerve agent*, sarin, novichok, radiological, dirty bomb, IAEA, non-proliferation, nonproliferation, arms control, New START, nuclear test*, missile test*, missile launch*, arms deal*, arms sale*, arms export*, weapons shipment*, weapons transfer*, arms race]
+
+  crime:
+    label: Organised crime & trafficking
+    color: "#a1663f"
+    keywords: [cartel*, drug traffick*, trafficking, trafficker*, smuggl*, cocaine, fentanyl, heroin, methamphetamine, captagon, money laundering, organized crime, organised crime, gang, gangs, gang violence, mafia, human trafficking, arms trafficking, illegal mining, poaching, wildlife trafficking, extortion, corruption, bribery, narco*, drug seizure*, drug lord*, kingpin*, sanctions evasion]
+
+  health:
+    label: Health & humanitarian
+    color: "#30a46c"
+    keywords: [outbreak*, epidemic*, pandemic*, virus, disease*, cholera, ebola, mpox, measles, marburg, avian flu, bird flu, H5N1, polio, dengue, malaria, anthrax, WHO, World Health Organization, public health emergency, vaccine*, quarantine, famine, hunger, malnutrition, starvation, humanitarian, aid convoy*, food aid, humanitarian aid, aid workers, aid agencies, OCHA, World Food Programme, WFP, ICRC, Red Cross, Red Crescent, MSF, Doctors Without Borders]
+
+  disaster:
+    label: Disasters & climate
+    color: "#00a2c7"
+    keywords: [earthquake*, quake*, tsunami*, hurricane*, typhoon*, cyclone*, tropical storm*, flood*, landslide*, mudslide*, wildfire*, bushfire*, forest fire*, drought*, heatwave*, heat wave*, volcano*, volcanic, eruption*, avalanche*, tornado*, climate change, climate security, extreme weather, magnitude, evacuat*, natural disaster*, sea level rise, GDACS, storm surge, monsoon]
+
+  migration:
+    label: Borders & migration
+    color: "#978365"
+    keywords: [migrant*, migration, refugee*, asylum*, border*, deport*, displaced, displacement, IDP, IDPs, UNHCR, IOM, border crossing*, border wall, border security, illegal crossing*, people smuggl*, boat capsize*, boat sank, Channel crossing*, frontier, expulsion of migrants, stateless]
+
+  space:
+    label: Space & emerging tech
+    color: "#7c8ea6"
+    keywords: [space force, satellite*, anti-satellite, ASAT, orbit*, rocket launch*, space launch, launch vehicle, spy satellite*, GPS jamming, GPS spoofing, jamming, spoofing, military AI, AI warfare, AI weapon*, AI-enabled weapon*, AI arms race, frontier AI, quantum computing, quantum encryption, autonomous weapon*, killer robot*, space station, NASA, Roscosmos, SpaceX, Starlink, lunar, moon mission, space race, counter-drone, drone swarm*, directed energy, laser weapon*]
+
+# Shown for items from specialist sources that matched no keyword list.
+fallback:
+  id: other
+  label: Other / unclassified
+  color: "#8b8d98"
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  SEVERITY — the red / amber markers. Matched against the headline only.
+# ─────────────────────────────────────────────────────────────────────────────
+severity:
+  high: [kill, killed, kills, killing, dead, deaths, death toll, massacre*, coup, coups, putsch, invasion, invades, explosion*, blast*, bomb, bombs, bombing*, bombed, airstrike*, air strike*, missile strike*, missile attack*, assassinat*, hostage*, beheaded, state of emergency, martial law, declares war, declared war, nuclear test, mass casualt*, mass shooting*, genocide, tsunami, terror attack*, terrorist attack*, suicide bomb*, mutiny, overthrown, ousted, seized power, shot down, red alert, executed, slaughtered]
+  elevated: [attack*, clash*, protest*, riot*, sanction*, cyberattack*, ransomware, militant*, ambush*, troops, offensive, shelling, kidnap*, abduct*, evacuat*, outbreak*, earthquake*, crackdown, curfew, mobiliz*, mobilis*, threat*, tension*, escalat*, warship*, military drill*, drills, missile*, ICBM*, drone attack*, standoff, incursion*, seized, wounded, injured, orange alert, emergency, breach*]
+  # Earthquakes and similar items carrying a magnitude (e.g. "M 6.1 - ..."):
+  magnitude_high: 6.5
+  magnitude_elevated: 5.8
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  NOISE — headlines from general news feeds matching this are dropped
+#  (sport, entertainment, lifestyle). Specialist feeds are not affected.
+# ─────────────────────────────────────────────────────────────────────────────
+noise: "\\b(football|soccer|Premier League|Champions League|La Liga|Serie A|Bundesliga|World Cup qualif|NBA|NFL|MLB|NHL|cricket|rugby|tennis|Wimbledon|golf|Formula 1|F1|Grand Prix|Olympic|Oscars?|Grammy|Emmy|box office|album|celebrity|recipe|horoscope|fashion week|red carpet|transfer window|match report|quiz|crossword|Eurovision)\\b"

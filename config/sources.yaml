@@ -1,0 +1,228 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  SOURCES — everything the dashboard pulls in
+#
+#  Edit this file on github.com (pencil icon) to add or remove sources.
+#  Changes take effect on the next run (within ~20 minutes), or right away
+#  if you run the workflow by hand from the Actions tab.
+#
+#  A source that stops working never breaks the dashboard: it is skipped and
+#  shown as failing on the "Sources" tab, so you can fix or remove it.
+# ─────────────────────────────────────────────────────────────────────────────
+
+settings:
+  window_hours: 48          # how far back the dashboard keeps reports
+  max_items: 6000           # hard cap to keep the page fast
+  title: Security Watch     # shown at the top of the page
+
+# ── 1. RSS / ATOM FEEDS ──────────────────────────────────────────────────────
+#  name:          label shown on the dashboard
+#  url:           the feed address
+#  specialist:    true  → keep every item (the outlet only covers security topics)
+#                 false → keep only items that match a security domain (default)
+#  domain:        topic to use when a specialist item matches no keyword list
+#  hint:          where to file items that mention no place by name
+#                 (a continent, region or country exactly as written in places.yaml)
+#  drop_if:       regex — skip items whose headline matches
+#  min_magnitude: for earthquake feeds — skip anything smaller
+feeds:
+  # Global news desks (filtered to security-relevant stories)
+  - {name: BBC World,            url: "https://feeds.bbci.co.uk/news/world/rss.xml"}
+  - {name: BBC Africa,           url: "https://feeds.bbci.co.uk/news/world/africa/rss.xml",        hint: Africa}
+  - {name: BBC Asia,             url: "https://feeds.bbci.co.uk/news/world/asia/rss.xml",          hint: Asia}
+  - {name: BBC Europe,           url: "https://feeds.bbci.co.uk/news/world/europe/rss.xml",        hint: Europe}
+  - {name: BBC Latin America,    url: "https://feeds.bbci.co.uk/news/world/latin_america/rss.xml", hint: Americas}
+  - {name: BBC Middle East,      url: "https://feeds.bbci.co.uk/news/world/middle_east/rss.xml",   hint: Middle East}
+  - {name: BBC US & Canada,      url: "https://feeds.bbci.co.uk/news/world/us_and_canada/rss.xml", hint: North America}
+  - {name: Al Jazeera,           url: "https://www.aljazeera.com/xml/rss/all.xml"}
+  - {name: The Guardian World,   url: "https://www.theguardian.com/world/rss"}
+  - {name: France 24,            url: "https://www.france24.com/en/rss"}
+  - {name: France 24 Africa,     url: "https://www.france24.com/en/africa/rss",                    hint: Africa}
+  - {name: DW,                   url: "https://rss.dw.com/rdf/rss-en-all"}
+  - {name: NPR World,            url: "https://feeds.npr.org/1004/rss.xml"}
+  - {name: UN News,              url: "https://news.un.org/feed/subscribe/en/news/all/rss.xml"}
+
+  # Regional desks
+  - {name: AllAfrica,            url: "https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf", hint: Africa}
+  - {name: Africanews,           url: "https://www.africanews.com/feed/rss",                       hint: Africa}
+  - {name: Premium Times (NG),   url: "https://www.premiumtimesng.com/feed",                       hint: Nigeria}
+  - {name: Daily Maverick (ZA),  url: "https://www.dailymaverick.co.za/dmrss/",                    hint: South Africa}
+  - {name: Middle East Eye,      url: "https://www.middleeasteye.net/rss",                         hint: Middle East}
+  - {name: Times of Israel,      url: "https://www.timesofisrael.com/feed/",                       hint: Israel}
+  - {name: The Diplomat,         url: "https://thediplomat.com/feed/",                             hint: Asia}
+  - {name: Asia Times,           url: "https://asiatimes.com/feed/",                               hint: Asia}
+  - {name: SCMP China,           url: "https://www.scmp.com/rss/4/feed",                           hint: China}
+  - {name: Kyiv Independent,     url: "https://kyivindependent.com/rss/",                          hint: Ukraine}
+  - {name: Meduza (English),     url: "https://meduza.io/rss/en/all",                              hint: Russia}
+  - {name: Balkan Insight,       url: "https://balkaninsight.com/feed/",                           hint: Central Europe & Balkans}
+  - {name: Euractiv,             url: "https://www.euractiv.com/feed/",                            hint: Europe}
+  - {name: MercoPress,           url: "https://en.mercopress.com/rss",                             hint: South America}
+  - {name: RNZ Pacific,          url: "https://www.rnz.co.nz/rss/pacific.xml",                     hint: Pacific Islands}
+  - {name: Guardian Australia,   url: "https://www.theguardian.com/australia-news/rss",            hint: Australia}
+  - {name: ArcticToday,          url: "https://www.arctictoday.com/feed/",                         hint: Arctic}
+
+  # Specialist security outlets (every item kept)
+  - {name: Crisis Group,         url: "https://www.crisisgroup.org/rss.xml",          specialist: true, domain: political}
+  - {name: War on the Rocks,     url: "https://warontherocks.com/feed/",              specialist: true, domain: conflict}
+  - {name: Defense One,          url: "https://www.defenseone.com/rss/all/",          specialist: true, domain: conflict}
+  - {name: Breaking Defense,     url: "https://breakingdefense.com/feed/",            specialist: true, domain: conflict}
+  - {name: The War Zone,         url: "https://www.twz.com/feed",                     specialist: true, domain: conflict}
+  - {name: Long War Journal,     url: "https://www.longwarjournal.org/feed",          specialist: true, domain: terrorism}
+  - {name: Bellingcat,           url: "https://www.bellingcat.com/feed/",             specialist: true, domain: conflict}
+  - {name: Just Security,        url: "https://www.justsecurity.org/feed/",           specialist: true, domain: diplomacy}
+  - {name: InSight Crime,        url: "https://insightcrime.org/feed/",               specialist: true, domain: crime, hint: Americas}
+  - {name: Arms Control Wonk,    url: "https://www.armscontrolwonk.com/feed/",        specialist: true, domain: wmd}
+  - {name: UN News Peace & Security, url: "https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml", specialist: true, domain: conflict}
+
+  # Cyber
+  - {name: The Record,           url: "https://therecord.media/feed/",                specialist: true, domain: cyber}
+  - {name: BleepingComputer,     url: "https://www.bleepingcomputer.com/feed/",       specialist: true, domain: cyber}
+  - {name: Krebs on Security,    url: "https://krebsonsecurity.com/feed/",            specialist: true, domain: cyber}
+  - {name: The Hacker News,      url: "https://feeds.feedburner.com/TheHackersNews",  specialist: true, domain: cyber}
+  - {name: CISA Advisories,      url: "https://www.cisa.gov/cybersecurity-advisories/all.xml", specialist: true, domain: cyber}
+
+  # Maritime, energy, space
+  - {name: gCaptain,             url: "https://gcaptain.com/feed/",                   specialist: true, domain: maritime}
+  - {name: Maritime Executive,   url: "https://maritime-executive.com/articles.rss",  specialist: true, domain: maritime}
+  - {name: OilPrice,             url: "https://oilprice.com/rss/main",                specialist: true, domain: economic}
+  - {name: SpaceNews,            url: "https://spacenews.com/feed/",                  specialist: true, domain: space}
+
+  # Disasters, health, humanitarian
+  - {name: GDACS alerts,         url: "https://www.gdacs.org/xml/rss.xml",            specialist: true, domain: disaster, drop_if: "^Green"}
+  - {name: USGS earthquakes M5+, url: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.atom", specialist: true, domain: disaster, min_magnitude: 5.0}
+  - {name: ReliefWeb headlines,  url: "https://reliefweb.int/headlines/rss.xml",      specialist: true, domain: health}
+  - {name: ReliefWeb disasters,  url: "https://reliefweb.int/disasters/rss.xml",      specialist: true, domain: disaster}
+  - {name: WHO news,             url: "https://www.who.int/rss-feeds/news-english.xml", specialist: true, domain: health}
+
+# ── 2. GOOGLE NEWS SEARCHES ──────────────────────────────────────────────────
+#  Each search scans thousands of outlets. This is what guarantees every
+#  region is covered, including places the feeds above rarely mention.
+#  Query syntax: OR between words, "quotes" for phrases.
+google_news:
+  enabled: true
+  when: 1d               # only stories from the last day
+  language: en-US        # change to fr-FR, es-419, pt-BR, ar … for other editions
+  country: US
+  # Security words added to every regional search below:
+  security_terms: '(attack OR military OR troops OR militants OR coup OR protest OR clashes OR sanctions OR terrorism OR insurgents OR "security forces" OR killed OR navy OR cyberattack)'
+  regional:
+    - {hint: North Africa,               places: 'Egypt OR Libya OR Tunisia OR Algeria OR Morocco OR "Western Sahara"'}
+    - {hint: West Africa,                places: 'Mali OR "Burkina Faso" OR Niger OR Nigeria OR Ghana OR Senegal OR "Ivory Coast" OR Guinea OR Benin OR Togo OR Sahel OR Mauritania'}
+    - {hint: Central Africa,             places: 'Congo OR DRC OR Cameroon OR Chad OR "Central African Republic" OR Gabon'}
+    - {hint: East Africa & Horn,         places: 'Sudan OR "South Sudan" OR Ethiopia OR Somalia OR Kenya OR Eritrea OR Uganda OR Rwanda OR Burundi OR Djibouti'}
+    - {hint: Southern Africa,            places: 'Mozambique OR Zimbabwe OR "South Africa" OR Angola OR Zambia OR Malawi OR Madagascar OR Namibia'}
+    - {hint: Levant,                     places: 'Israel OR Gaza OR "West Bank" OR Lebanon OR Syria OR Jordan'}
+    - {hint: Gulf & Arabian Peninsula,   places: 'Yemen OR Houthis OR "Saudi Arabia" OR UAE OR Qatar OR Oman OR Bahrain OR Kuwait OR "Red Sea"'}
+    - {hint: "Iran, Iraq & Türkiye",     places: 'Iran OR Iraq OR Turkey OR Kurdish'}
+    - {hint: Eastern Europe & Caucasus,  places: 'Ukraine OR Russia OR Belarus OR Moldova OR Georgia OR Armenia OR Azerbaijan'}
+    - {hint: Central Europe & Balkans,   places: 'Poland OR Serbia OR Kosovo OR Bosnia OR Hungary OR Romania OR Balkans'}
+    - {hint: Northern Europe,            places: 'Baltic OR Finland OR Sweden OR Norway OR Estonia OR Latvia OR Lithuania OR Denmark'}
+    - {hint: Western Europe,             places: 'Britain OR France OR Germany OR Netherlands OR Belgium OR NATO'}
+    - {hint: Southern Europe,            places: 'Italy OR Spain OR Greece OR Cyprus OR Mediterranean'}
+    - {hint: East Asia,                  places: 'China OR Taiwan OR "North Korea" OR "South Korea" OR Japan'}
+    - {hint: Southeast Asia,             places: 'Myanmar OR Philippines OR Thailand OR Indonesia OR Vietnam OR Cambodia OR "South China Sea"'}
+    - {hint: South Asia,                 places: 'India OR Pakistan OR Afghanistan OR Bangladesh OR Kashmir OR "Sri Lanka" OR Nepal'}
+    - {hint: Central Asia,               places: 'Kazakhstan OR Uzbekistan OR Kyrgyzstan OR Tajikistan OR Turkmenistan'}
+    - {hint: North America,              places: '"United States" OR Pentagon OR Canada OR Mexico OR Greenland'}
+    - {hint: Central America & Caribbean, places: 'Haiti OR Cuba OR Guatemala OR Honduras OR "El Salvador" OR Nicaragua OR Panama OR Caribbean'}
+    - {hint: South America,              places: 'Venezuela OR Colombia OR Ecuador OR Peru OR Brazil OR Bolivia OR Argentina OR Chile OR Guyana'}
+    - {hint: Australia & New Zealand,    places: 'Australia OR "New Zealand" OR AUKUS'}
+    - {hint: Pacific Islands,            places: '"Papua New Guinea" OR Fiji OR "Solomon Islands" OR Vanuatu OR "Pacific Islands" OR "New Caledonia"'}
+    - {hint: Arctic,                     places: 'Arctic OR Svalbard OR "High North"'}
+    - {hint: Antarctica,                 places: 'Antarctica OR Antarctic'}
+  # Topic searches (worldwide):
+  topical:
+    - {domain: cyber,     query: 'cyberattack OR ransomware OR "state-sponsored hackers" OR "data breach"'}
+    - {domain: maritime,  query: 'piracy OR "tanker seized" OR "naval standoff" OR "undersea cable" OR "shadow fleet"'}
+    - {domain: wmd,       query: '"nuclear test" OR "ballistic missile" OR "uranium enrichment" OR IAEA OR "chemical weapons"'}
+    - {domain: health,    query: 'outbreak OR epidemic OR cholera OR ebola OR mpox OR famine'}
+    - {domain: migration, query: 'migrants OR refugees OR "border crossing" OR displaced OR asylum'}
+    - {domain: crime,     query: 'cartel OR "drug trafficking" OR "human trafficking" OR "organised crime"'}
+    - {domain: space,     query: 'satellite OR "GPS jamming" OR "anti-satellite" OR "space force"'}
+    - {domain: economic,  query: '"export controls" OR "critical minerals" OR "energy security" OR "oil supply"'}
+
+# ── 3. GDELT ─────────────────────────────────────────────────────────────────
+#  GDELT watches news worldwide and refreshes every 15 minutes.
+#  One search per domain; GDELT allows one request every 5 seconds.
+gdelt:
+  enabled: true
+  timespan: 3h           # look-back per run
+  max_per_query: 75
+  languages: [english]   # add e.g. french, spanish, portuguese, arabic
+  queries:
+    conflict:  '(airstrike OR shelling OR "armed clashes" OR "military offensive" OR insurgents OR "drone strike")'
+    terrorism: '(terrorist OR jihadist OR "suicide bomber" OR "militant attack" OR "Islamic State")'
+    political: '(coup OR "state of emergency" OR "martial law" OR "anti-government protest" OR junta)'
+    cyber:     '(cyberattack OR ransomware OR "data breach" OR hackers OR disinformation)'
+    diplomacy: '(sanctions OR "security council" OR "peace talks" OR "expelled diplomats")'
+    economic:  '("energy security" OR "export controls" OR "critical minerals" OR "oil supply" OR "food security")'
+    maritime:  '(piracy OR warship OR "coast guard" OR "naval drills" OR "tanker seized")'
+    wmd:       '("nuclear weapons" OR "ballistic missile" OR "chemical weapons" OR "uranium enrichment")'
+    crime:     '(cartel OR "drug trafficking" OR "human trafficking" OR smuggling)'
+    health:    '(outbreak OR epidemic OR cholera OR ebola OR famine)'
+    disaster:  '(earthquake OR flooding OR cyclone OR typhoon OR wildfire OR landslide)'
+    migration: '(migrants OR refugees OR "border crossing" OR displaced)'
+    space:     '("anti-satellite" OR "GPS jamming" OR "spy satellite" OR "space force" OR "satellite launch")'
+
+# ── 4. REFERENCE DESK ────────────────────────────────────────────────────────
+#  The "Links" tab: live maps, trackers and institutions — your start page.
+links:
+  - group: Live maps & conflict trackers
+    items:
+      - {name: Liveuamap,          url: "https://liveuamap.com",                         note: "Live incident maps by country"}
+      - {name: ACLED,              url: "https://acleddata.com",                         note: "Political violence & protest data"}
+      - {name: CrisisWatch,        url: "https://www.crisisgroup.org/crisiswatch",       note: "Monthly conflict tracker, 70+ countries"}
+      - {name: ISW,                url: "https://www.understandingwar.org",              note: "Daily campaign assessments"}
+      - {name: UCDP,               url: "https://ucdp.uu.se",                            note: "Uppsala conflict data"}
+  - group: Disasters & hazards
+    items:
+      - {name: GDACS,              url: "https://www.gdacs.org",                         note: "Global disaster alerts"}
+      - {name: USGS Earthquakes,   url: "https://earthquake.usgs.gov/earthquakes/map/",  note: "Live quake map"}
+      - {name: NASA FIRMS,         url: "https://firms.modaps.eosdis.nasa.gov/map/",     note: "Active fires by satellite"}
+      - {name: Windy,              url: "https://www.windy.com",                         note: "Storms & weather"}
+      - {name: ReliefWeb,          url: "https://reliefweb.int",                         note: "Humanitarian updates"}
+  - group: Air, sea & space
+    items:
+      - {name: ADS-B Exchange,     url: "https://globe.adsbexchange.com",                note: "Unfiltered flight tracking, incl. military"}
+      - {name: Flightradar24,      url: "https://www.flightradar24.com",                 note: "Flight tracking"}
+      - {name: MarineTraffic,      url: "https://www.marinetraffic.com",                 note: "Ship tracking"}
+      - {name: GPSJam,             url: "https://gpsjam.org",                            note: "Daily GPS interference map"}
+      - {name: CelesTrak,          url: "https://celestrak.org",                         note: "Satellite orbits"}
+  - group: Cyber & internet
+    items:
+      - {name: Cloudflare Radar,   url: "https://radar.cloudflare.com",                  note: "Internet outages & attacks"}
+      - {name: IODA,               url: "https://ioda.inetintel.cc.gatech.edu",          note: "Internet shutdown detection"}
+      - {name: NetBlocks,          url: "https://netblocks.org",                         note: "Connectivity reports"}
+      - {name: CISA KEV,           url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", note: "Actively exploited vulnerabilities"}
+      - {name: Ransomware.live,    url: "https://www.ransomware.live",                   note: "Ransomware victim tracker"}
+  - group: Health, food & displacement
+    items:
+      - {name: WHO Outbreak News,  url: "https://www.who.int/emergencies/disease-outbreak-news", note: "Official outbreak notices"}
+      - {name: FEWS NET,           url: "https://fews.net",                              note: "Famine early warning"}
+      - {name: UNHCR Data,         url: "https://data.unhcr.org",                        note: "Refugee situations"}
+      - {name: IOM DTM,            url: "https://dtm.iom.int",                           note: "Displacement tracking"}
+      - {name: OCHA,               url: "https://www.unocha.org",                        note: "Humanitarian coordination"}
+  - group: Institutions
+    items:
+      - {name: UN Security Council, url: "https://press.un.org/en/content/security-council", note: "Meetings & statements"}
+      - {name: AU Peace & Security Council, url: "https://www.peaceau.org",             note: "African Union PSC"}
+      - {name: ECOWAS,             url: "https://ecowas.int",                            note: "West African bloc"}
+      - {name: NATO News,          url: "https://www.nato.int/cps/en/natohq/news.htm",   note: "Alliance news"}
+      - {name: EU External Action, url: "https://www.eeas.europa.eu",                    note: "EU foreign & security policy"}
+      - {name: ASEAN,              url: "https://asean.org",                             note: "Southeast Asian bloc"}
+      - {name: OSCE,               url: "https://www.osce.org",                          note: "European security body"}
+      - {name: IAEA,               url: "https://www.iaea.org/newscenter",               note: "Nuclear watchdog"}
+  - group: Analysis
+    items:
+      - {name: ISS Africa,         url: "https://issafrica.org",                         note: "African security analysis"}
+      - {name: IISS,               url: "https://www.iiss.org",                          note: "Military balance & strategy"}
+      - {name: CSIS,               url: "https://www.csis.org",                          note: "Strategic & international studies"}
+      - {name: RUSI,               url: "https://www.rusi.org",                          note: "Defence & security"}
+      - {name: Chatham House,      url: "https://www.chathamhouse.org",                  note: "International affairs"}
+      - {name: SIPRI,              url: "https://www.sipri.org",                         note: "Arms, military spending"}
+      - {name: Lowy Institute,     url: "https://www.lowyinstitute.org",                 note: "Indo-Pacific analysis"}
+      - {name: ORF,                url: "https://www.orfonline.org",                     note: "South Asia analysis"}
+      - {name: Carnegie Endowment, url: "https://carnegieendowment.org",                 note: "Global policy research"}
+  - group: Raw data
+    items:
+      - {name: GDELT,              url: "https://www.gdeltproject.org",                  note: "The global news engine behind this page"}
+      - {name: GDELT GEO map,      url: "https://api.gdeltproject.org/api/v2/geo/geo?query=protest&format=html", note: "Ad-hoc news maps"}
