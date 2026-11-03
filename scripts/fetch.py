@@ -881,7 +881,24 @@ def main():
     for it in builder.items.values():
         old = merged.get(it["id"])
         merged[it["id"]] = merge_items(old, it) if old else it
-    items = sorted(merged.values(), key=lambda i: i["p"], reverse=True)[:max_items]
+    ranked = sorted(merged.values(), key=lambda i: i["p"], reverse=True)
+    items = ranked[:max_items]
+    # The size cap drops the oldest stories first; make sure quiet countries
+    # keep their (older) stories so every country stays represented.
+    keep_min = int(settings.get("min_per_country", 15))
+    per = {}
+    for it in items:
+        for c in it.get("c") or []:
+            per[c] = per.get(c, 0) + 1
+    kept_ids = {it["id"] for it in items}
+    for it in ranked[max_items:]:
+        need = [c for c in it.get("c") or [] if per.get(c, 0) < keep_min]
+        if need and it["id"] not in kept_ids:
+            items.append(it)
+            kept_ids.add(it["id"])
+            for c in it.get("c") or []:
+                per[c] = per.get(c, 0) + 1
+    items.sort(key=lambda i: i["p"], reverse=True)
     covered = {c for it in items for c in it.get("c") or []}
     absent = [c for c in gaz.country_region if c not in covered]
     log(f"Countries with reports: {len(gaz.country_region) - len(absent)}/{len(gaz.country_region)}"

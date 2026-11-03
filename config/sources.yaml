@@ -11,7 +11,8 @@
 
 settings:
   window_hours: 48          # how far back the dashboard keeps reports
-  max_items: 6000           # hard cap to keep the page fast
+  max_items: 7000           # cap to keep the page fast (oldest dropped first)
+  min_per_country: 15       # …but every country always keeps at least this many
   title: Security Watch     # shown at the top of the page
 
 # ── 1. RSS / ATOM FEEDS ──────────────────────────────────────────────────────
