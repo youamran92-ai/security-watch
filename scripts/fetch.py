@@ -40,7 +40,9 @@ CONFIG = ROOT / "config"
 SITE = ROOT / "site"
 
 UA = "Mozilla/5.0 (compatible; SecurityWatch/1.0; +https://github.com/)"
-TIMEOUT = 25
+TIMEOUT = (8, 20)          # (connect, read) seconds
+GDELT_BUDGET = 150         # stop asking GDELT after this many seconds
+RUN_BUDGET = 480           # whole run must finish well inside GitHub's limit
 NOW = datetime.now(timezone.utc)
 
 
@@ -345,12 +347,12 @@ def fetch_gdelt(domain: str, query: str, gd: dict):
            f"&maxrecords={int(gd.get('max_per_query', 75))}&timespan={gd.get('timespan', '3h')}")
     t0 = time.time()
     last = None
-    for attempt in range(3):
+    for attempt in range(2):
         try:
-            r = session.get(url, timeout=TIMEOUT + 15)
+            r = session.get(url, timeout=(8, 25))
             if r.status_code == 429:
                 last = "rate limited (HTTP 429)"
-                time.sleep(10 + attempt * 5)
+                time.sleep(6)
                 continue
             r.raise_for_status()
             text = r.text.strip()
@@ -375,7 +377,7 @@ def fetch_gdelt(domain: str, query: str, gd: dict):
             return items, {"ok": True, "count": len(items), "ms": int((time.time() - t0) * 1000)}
         except Exception as ex:
             last = short_err(ex)
-            time.sleep(6)
+            break      # slow or broken: give up on this search, don't retry
     return [], {"ok": False, "count": 0, "error": last, "ms": int((time.time() - t0) * 1000)}
 
 
@@ -625,7 +627,14 @@ def main():
     if gd.get("enabled", True) and not args.skip_gdelt:
         qs = gd.get("queries", {}) or {}
         log(f"Running {len(qs)} GDELT searches…")
+        g_start = time.time()
         for i, (dom, query) in enumerate(qs.items()):
+            spent = time.time() - g_start
+            if spent > GDELT_BUDGET or time.time() - t_start > RUN_BUDGET:
+                status.append({"name": f"GDELT · {dom}", "kind": "gdelt", "ok": False, "count": 0,
+                               "kept": 0, "url": "", "error": "skipped — GDELT was slow this run"})
+                log(f"  [ERR] GDELT · {dom}: skipped (time budget)")
+                continue
             if i:
                 time.sleep(5.5)
             raw, st = fetch_gdelt(dom, query, gd)
